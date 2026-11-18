@@ -23,6 +23,7 @@ import { getStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { ShippingActions } from "@/components/admin/shipping-actions";
 import { carrierStateLabels, custodyLabels } from "@/features/shipping/lib/labels";
+import { orderSavings } from "@/features/orders/lib/order-savings";
 
 const manualStateLabels = { preparing: "جارٍ التجهيز", ready_for_pickup: "جاهز للاستلام", printed: "تمت الطباعة", delivered: "تم التسليم", returned: "تم الإرجاع" };
 const itemTypeLabels = { product_variant: "منتج", offer: "عرض", collection: "مجموعة" } as const;
@@ -246,8 +247,7 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus, canU
   const paymentDisplay = order ? orderPaymentBadge(order) : null;
   const shippingPaymentManaged = Boolean(order?.shipping || order?.shippingQuoteId || (order?.shippingAmountCents ?? 0) > 0);
   const refunded = order?.paymentMethod === "paymob" ? (order.refundedAmountCents ?? 0) : 0;
-  const savings = order?.items.reduce((sum, item) => sum + Math.max(0,
-    Math.round((item.snapshotBaseUnitPrice ?? item.unitPrice) * 100) - Math.round(item.unitPrice * 100)) * item.qty, 0) ?? 0;
+  const savings = orderSavings(order?.items ?? []);
 
   return (
     <AdminShell
@@ -326,7 +326,10 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus, canU
                 </Table>
                 <div role="region" aria-label="ملخص المبالغ" className="border-t border-line px-5 py-4 sm:px-6">
                   <dl className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
-                    {savings > 0 ? <Detail label="التوفير على المنتجات"><span className="num">{formatMoney(savings / 100)}</span></Detail> : null}
+                    {savings.saleCents > 0 ? <Detail label="التوفير بتخفيضات المنتجات"><span className="num">{formatMoney(savings.saleCents / 100)}</span></Detail> : null}
+                    {order.promoCodeText ? (
+                      <Detail label={`كود الخصم (${order.promoCodeText})`}><span className="num">{formatMoney(savings.promoCents / 100)}</span></Detail>
+                    ) : null}
                     <Detail label="إجمالي الطلب"><strong className="num">{formatMoney(order.totalAmount)}</strong></Detail>
                     {refunded > 0 ? (
                       <>

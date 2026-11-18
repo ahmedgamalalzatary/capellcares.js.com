@@ -29,7 +29,7 @@ export interface AdminOrderReviewFlagDto {
   id: number;
   orderId: number;
   orderCode: string;
-  flagType: "address_review" | "expiry_review" | "refund_review" | "amount_mismatch" | "custody_review" | "cancellation_pending" | "untouched_paid";
+  flagType: "address_review" | "expiry_review" | "refund_review" | "amount_mismatch" | "custody_review" | "cancellation_pending" | "untouched_paid" | "promo_free_review";
   reason: string;
   status: "open" | "resolved";
   customerName: string;

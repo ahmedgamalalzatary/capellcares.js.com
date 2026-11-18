@@ -4,6 +4,8 @@ import type { CheckoutPayload } from "../../types/domain.js";
 import { resolvePaymobConfig } from "../payments/paymob/paymob-config.js";
 import { initiatePaymobCheckout } from "./paymob-checkout.service.js";
 import { resolveShippingForCheckout } from "../shipping/checkout-shipping-runtime.js";
+import { PromoRejectedError } from "../promos/promo-checkout.js";
+import { normalizePromoCode } from "@capella/shared";
 
 export class PaymobUnavailableError extends Error {
   constructor() {
@@ -44,6 +46,10 @@ export async function submitCheckout(payload: CheckoutPayload, options: { idempo
   validateCheckoutPayload(payload);
   if (!options.idempotencyKey?.trim()) {
     throw new Error("Idempotency-Key header is required for checkout");
+  }
+  if (payload.paymentMethod === "paymob" && payload.promoCode) {
+    // Promo codes are cash-on-delivery only until online payment carries the code (spec phase 3).
+    throw new PromoRejectedError({ status: "rejected", code: normalizePromoCode(payload.promoCode), reason: "online_payment_unavailable" });
   }
   if (payload.paymentMethod === "paymob") {
     const priced = await priceCheckout(payload);

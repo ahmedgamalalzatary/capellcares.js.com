@@ -815,7 +815,8 @@ export const orderReviewFlags = mysqlTable("order_review_flags", {
     "amount_mismatch",
     "custody_review",
     "cancellation_pending",
-    "untouched_paid"
+    "untouched_paid",
+    "promo_free_review"
   ]).notNull(),
   reason: text("reason").notNull(),
   status: mysqlEnum("status", ["open", "resolved"]).notNull().default("open"),

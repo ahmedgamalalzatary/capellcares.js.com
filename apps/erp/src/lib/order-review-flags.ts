@@ -7,5 +7,6 @@ export const flagTitles: Record<AdminOrderReviewFlagDto["flagType"], string> = {
   amount_mismatch: "المبلغ المحصل لا يطابق الطلب",
   custody_review: "حيازة الشحنة غير مؤكدة",
   cancellation_pending: "تأكيد الإلغاء معلق",
-  untouched_paid: "طلب مدفوع تجاوز 96 ساعة دون تجهيز"
+  untouched_paid: "طلب مدفوع تجاوز 96 ساعة دون تجهيز",
+  promo_free_review: "كود خصم جعل الطلب مجانيًا: راجعيه قبل الشحن"
 };

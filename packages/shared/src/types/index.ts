@@ -383,6 +383,10 @@ export interface OrderItem {
   snapshotDiscountValue?: number | null;
   snapshotDiscountStartsAt?: string | null;
   snapshotDiscountEndsAt?: string | null;
+  /** What a promo code took off this line's original price; lineTotal is what was actually paid. */
+  promoDiscountAmount?: number | null;
+  promoReplacedDiscountId?: number | null;
+  isPromoGift?: boolean;
   createdAt?: string;
   updatedAt?: string;
   review?: OrderItemReview | null;
@@ -418,6 +422,9 @@ export interface OrderSummary {
   totalAmount: number;
   createdAt: string;
   shippingAmountCents?: number;
+  /** The promo code used on this order (its display text) and what it took off, in piastres. */
+  promoCodeText?: string | null;
+  promoDiscountCents?: number;
   shippingQuoteId?: string | null;
   shippingSize?: "small" | "medium" | "large" | null;
   fulfillment?: CustomerOrderFulfillment | null;

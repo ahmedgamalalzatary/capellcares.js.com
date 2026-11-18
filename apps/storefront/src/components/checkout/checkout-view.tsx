@@ -10,7 +10,7 @@ import type { CheckoutViewProps } from "../../types/checkout-view.types";
 
 export function CheckoutView({ lang, dict }: CheckoutViewProps) {
   useCart();
-  const { form, errors, placing, paymobMethods, orderId, resolved, subtotal, totalAmount, shipping, setField, placeOrder } = useCheckout({ lang, dict });
+  const { form, errors, placing, paymobMethods, orderId, resolved, subtotal, totalAmount, shipping, promo, setField, placeOrder } = useCheckout({ lang, dict });
 
   if (orderId) {
     return (
@@ -68,7 +68,7 @@ export function CheckoutView({ lang, dict }: CheckoutViewProps) {
         setField={setField}
         placeOrder={placeOrder}
       />
-      <CheckoutSummary lang={lang} dict={dict} resolved={resolved} subtotal={subtotal}
+      <CheckoutSummary lang={lang} dict={dict} resolved={resolved} subtotal={subtotal} promo={promo}
         shippingAmountCents={shipping.enabled === false ? 0 : shipping.quote?.shippingAmountCents ?? null} />
     </div>
   );

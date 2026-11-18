@@ -8,6 +8,7 @@ import { cancelCustomerOrder, fetchCustomerOrderById } from "@/lib/api/client";
 import { OrderFulfillment } from "./order-fulfillment";
 import { ReviewFormModal } from "@/components/reviews/review-form-modal";
 import { Icon } from "@/components/ui/icons";
+import { fillTemplate } from "@/lib/promo/promo-code";
 import {
   formatOrderDate,
   itemsCountLabel,
@@ -118,6 +119,11 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
               {itemsCountLabel(units, dict)}
               {" "}
               {dict.common.total}: {formatPrice(order.totalAmount, lang)}
+              {order.promoCodeText ? (
+                <span className="block font-normal">
+                  {fillTemplate(dict.promo.discountLine, { code: order.promoCodeText })}: {formatPrice((order.promoDiscountCents ?? 0) / 100, lang)}
+                </span>
+              ) : null}
             </p>
             <Link href={`/${lang}/orders`} className="btn btn--ghost w-full sm:w-auto">{dict.orders.backToOrders}</Link>
           </div>

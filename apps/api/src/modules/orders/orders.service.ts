@@ -11,6 +11,8 @@ import { addMoney, multiplyMoney } from "./money.js";
 import { resolveShippingForCheckout } from "../shipping/checkout-shipping-runtime.js";
 import type { CheckoutShippingService } from "../shipping/checkout-shipping.service.js";
 import { notifyStaffOfNewOrder } from "./order-alert.js";
+import { evaluateCheckoutPromo, PromoRejectedError, type PromoApplication, type PromoPricedItem } from "../promos/promo-checkout.js";
+import type { PromoAppliedDto, PromoRejectionDto } from "@capella/shared";
 
 export class CheckoutAmountChangedError extends Error {
   constructor() {
@@ -72,7 +74,13 @@ function resolveEffectiveDiscountedPrice(input: {
   };
 }
 
-export async function priceCheckout(payload: Pick<CheckoutPayload, "items">) {
+export type PricedCheckoutPromo = { dto: PromoAppliedDto | PromoRejectionDto; application: PromoApplication | null };
+
+/** Prices the cart from the database (sale discounts included), then applies the promo code when one is given (spec section 4). */
+export async function priceCheckout(
+  payload: Pick<CheckoutPayload, "items"> & Partial<Pick<CheckoutPayload, "promoCode" | "customerId" | "phone">>,
+  options: { now?: Date } = {}
+) {
   const pricedItems: Array<any> = [];
   for (const item of payload.items) {
     if (item.qty <= 0) throw new Error("Quantity must be positive");
@@ -81,6 +89,8 @@ export async function priceCheckout(payload: Pick<CheckoutPayload, "items">) {
       const [variant] = await db
         .select({
           id: productVariants.id,
+          productId: products.id,
+          categoryId: products.categoryId,
           sellingPrice: productVariants.sellingPrice,
           sizeLabel: productVariants.sizeLabel,
           arName: products.arName,
@@ -123,6 +133,8 @@ export async function priceCheckout(payload: Pick<CheckoutPayload, "items">) {
       pricedItems.push({
         itemType: "product_variant",
         variantId,
+        productId: variant.productId,
+        categoryId: variant.categoryId,
         offerId: null,
         qty: item.qty,
         unitPrice,
@@ -217,6 +229,31 @@ export async function priceCheckout(payload: Pick<CheckoutPayload, "items">) {
     });
   }
 
+  let promo: PricedCheckoutPromo | null = null;
+  if (payload.promoCode) {
+    const evaluation = await evaluateCheckoutPromo({
+      promoCode: payload.promoCode,
+      customerId: payload.customerId ?? null,
+      phone: payload.phone ?? null,
+      items: pricedItems as PromoPricedItem[],
+      now: options.now
+    });
+    if (evaluation.status === "applied") {
+      // The discount goes into each line's total (spec section 4.5), so every total check downstream stays unchanged.
+      for (const line of evaluation.result.lines) {
+        const item = pricedItems[Number(line.key)];
+        if (line.discountedPieces === 0) continue;
+        item.unitPrice = line.unitPrice;
+        item.lineTotal = line.lineTotal;
+        item.promoDiscountAmount = line.promoDiscount;
+        item.promoReplacedDiscountId = line.replacedSaleDiscountId;
+      }
+      promo = { dto: evaluation.dto, application: evaluation.application };
+    } else {
+      promo = { dto: evaluation.dto, application: null };
+    }
+  }
+
   const totalAmount = pricedItems.reduce((sum, row) => addMoney(sum, row.lineTotal), 0);
   const reservationQuantities = new Map<number, number>();
   for (const item of pricedItems) {
@@ -246,8 +283,16 @@ export async function priceCheckout(payload: Pick<CheckoutPayload, "items">) {
   return {
     items: pricedItems,
     totalAmount,
-    reservations: [...reservationQuantities.entries()].map(([variantId, qty]) => ({ variantId, qty }))
+    reservations: [...reservationQuantities.entries()].map(([variantId, qty]) => ({ variantId, qty })),
+    promo
   };
+}
+
+/** The applied promo code for a checkout that must use it; a code that no longer applies stops the checkout with its reason. */
+export function requireAppliedPromo(priced: Awaited<ReturnType<typeof priceCheckout>>): PromoApplication | null {
+  if (!priced.promo) return null;
+  if (priced.promo.dto.status === "rejected" || !priced.promo.application) throw new PromoRejectedError(priced.promo.dto as PromoRejectionDto);
+  return priced.promo.application;
 }
 
 export async function createOrderFromCheckout(
@@ -266,7 +311,8 @@ export async function createOrderFromCheckout(
     }
     return { id: existing.id, orderCode: existing.orderCode, paymentStatus: existing.paymentStatus, replayed: true };
   }
-  const priced = await priceCheckout(payload);
+  const priced = await priceCheckout(payload, { now: options.now });
+  const promo = requireAppliedPromo(priced);
   const shipping = await resolveShippingForCheckout(payload, priced, options.shippingService);
   const pricedItems = priced.items;
   const totalAmount = addMoney(priced.totalAmount, (shipping?.shippingAmountCents ?? 0) / 100);
@@ -300,7 +346,8 @@ export async function createOrderFromCheckout(
       shippingSize: shipping?.size ?? null,
       shippingSnapshot: shipping ? JSON.stringify(shipping) : null
       },
-      items: pricedItems
+      items: pricedItems,
+      promo
     });
   } catch (error) {
     const candidate = error as { code?: string; cause?: { code?: string } };

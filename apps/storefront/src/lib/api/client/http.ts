@@ -135,7 +135,7 @@ async function authedMutationJSONInternal<T>(
     }
   }
   const data = await response.json().catch(() => null) as { message?: string; code?: string } | null;
-  if (!response.ok) throw Object.assign(new Error(data?.message ?? `API ${response.status} ${path}`), { code: data?.code });
+  if (!response.ok) throw Object.assign(new Error(data?.message ?? `API ${response.status} ${path}`), { code: data?.code, body: data });
   if (accessToken && getAuthSessionRevision() !== revision) {
     throw new Error("Authentication session changed");
   }

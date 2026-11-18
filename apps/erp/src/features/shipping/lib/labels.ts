@@ -22,7 +22,7 @@ export const sizeLabels: Record<string, string> = { small: "صغير", medium: "
 export const flagLabels: Record<string, string> = {
   address_review: "مراجعة عنوان", expiry_review: "مراجعة المهلة", refund_review: "مراجعة استرداد",
   amount_mismatch: "اختلاف المبلغ", custody_review: "مراجعة الحيازة",
-  cancellation_pending: "إلغاء قيد التأكيد", untouched_paid: "طلب مدفوع دون تجهيز"
+  cancellation_pending: "إلغاء قيد التأكيد", untouched_paid: "طلب مدفوع دون تجهيز", promo_free_review: "طلب مجاني بكود خصم"
 };
 
 export const workItemStatusLabels: Record<string, string> = {

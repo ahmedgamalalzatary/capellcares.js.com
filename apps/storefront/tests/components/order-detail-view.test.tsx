@@ -150,6 +150,12 @@ describe("OrderDetailView reviews", () => {
     expect(screen.queryByRole("button", { name: lang === "en" ? "Cancel order" : "إلغاء الطلب" })).not.toBeInTheDocument();
   });
 
+  it("shows the promo code the order used and what it saved", async () => {
+    const order = await fetchCustomerOrderById();
+    fetchCustomerOrderById.mockResolvedValue({ ...order, promoCodeText: "SAVE10", promoDiscountCents: 1500 });
+    render(createElement(OrderDetailView, { lang: "en", dict: getDict("en"), orderId: 12 }));
+    expect(await screen.findByText(/Promo code \(SAVE10\)/)).toHaveTextContent("15");
+  });
   it("keeps a saved login loading while its token is restored", async () => {
     accessToken = null;
     render(createElement(OrderDetailView, { lang: "en", dict: getDict("en"), orderId: 12 }));

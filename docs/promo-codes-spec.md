@@ -611,6 +611,8 @@ Each phase can be released on its own. It leaves production working and has its 
 
 **Done when:** customers use percentage and fixed codes on COD orders. The Bosta dispatch, COD collection and cancellation checks pass for orders with codes. Every release path has a test.
 
+**As built:** `priceCheckout` applies the code (`apps/api/src/modules/promos/promo-checkout.ts`), so the cart price endpoint (`POST /api/v1/checkout/price`), the shipping quote and checkout all see the same line totals. The binding check locks the `promo_codes` row inside the order transaction. A refused code returns `409 PROMO_REJECTED` with the reason. Online payment with a code returns `online_payment_unavailable` until Phase 3. A free order raises the `promo_free_review` alert; holding its delivery job is added with free shipping in Phase 5, the first phase in which a delivered order can total 0. First-order and private checks already run here; Phase 4 completes their identity cases.
+
 ### Phase 3: Paymob support
 
 **Goal:** codes work with online payment.

@@ -5,6 +5,7 @@ import { PaymobProviderError } from "../payments/paymob/paymob-client.js";
 import { CheckoutAmountChangedError } from "../orders/orders.service.js";
 import { CheckoutShippingError } from "../shipping/checkout-shipping.service.js";
 import { PaymentEvidenceUnresolvedError } from "./paymob-checkout.service.js";
+import { PromoRejectedError } from "../promos/promo-checkout.js";
 
 export function checkoutController(req: AuthenticatedRequest, res: Response) {
   submitCheckout({
@@ -34,6 +35,10 @@ export function checkoutController(req: AuthenticatedRequest, res: Response) {
       }
       if (error instanceof PaymobProviderError) {
         res.status(502).json({ code: "PAYMENT_UNAVAILABLE", message: "Payment provider is temporarily unavailable" });
+        return;
+      }
+      if (error instanceof PromoRejectedError) {
+        res.status(409).json({ code: "PROMO_REJECTED", message: error.message, promo: error.rejection });
         return;
       }
       if (error instanceof CheckoutAmountChangedError) {

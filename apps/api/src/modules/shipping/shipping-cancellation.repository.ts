@@ -4,6 +4,7 @@ import { db } from "@capella/database/src/db";
 import { adminUsers, adminUserPermissions, permissions, orders, orderItems, orderStateHistory, shipments, shippingWorkItems, productVariants, orderReviewFlags } from "@capella/database/drizzle/schema";
 import { flagShippingOrder, stopUnsentDelivery, type ShippingTransaction } from "./shipping-dispatch.repository.js";
 import { untouchedShippingExpiryApplies } from "./shipping-state.repository.js";
+import { releasePromoUse } from "../promos/promo-checkout.js";
 
 type Order = typeof orders.$inferSelect;
 export type CancellationSource = "staff" | "customer" | "expiry" | "refund";
@@ -65,6 +66,8 @@ export async function finishShippingCancellation(tx: ShippingTransaction, order:
     paymentStatus: order.paymentMethod === "cod" || refundRequiredCents === 0 ? "denied" : order.paymentStatus }).where(eq(orders.id, order.id));
   await tx.update(shippingWorkItems).set({ status: "succeeded", lastError: null, claimedBy: null, claimedAt: null })
     .where(and(eq(shippingWorkItems.orderId, order.id), eq(shippingWorkItems.operation, "cancel_delivery")));
+  // Only a completed cancellation gives the promo code use back; a cancellation still pending keeps it.
+  await releasePromoUse(tx, order.id, "cancelled");
   await tx.update(orderReviewFlags).set({ status: "resolved", resolvedAt: now }).where(and(eq(orderReviewFlags.orderId, order.id),
     eq(orderReviewFlags.flagType, "cancellation_pending"), eq(orderReviewFlags.status, "open")));
   if (refundRequiredCents > 0) await flagShippingOrder(tx, order.id, "refund_review", "Order safely cancelled and stock restored; issue the full products-plus-shipping refund manually in Paymob and await its verified callback");

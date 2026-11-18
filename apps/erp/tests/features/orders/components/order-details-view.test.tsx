@@ -85,6 +85,15 @@ describe("OrderDetailsPage", () => {
     await act(async () => { resolveRefresh({ ...detailedOrder, paymentMethod, shipping: { ...shipping, manualState: "preparing" } }); });
     expect(await screen.findByText("جارٍ التجهيز (الموظفة)")).toBeInTheDocument();
   });
+  it("shows the promo code and splits savings into sale and code discounts", async () => {
+    fetchOrder.mockResolvedValue({ ...detailedOrder, promoCodeText: "SAVE10", promoDiscountCents: 2000,
+      items: [{ ...detailedOrder.items[0], qty: 3, unitPrice: 100, lineTotal: 260, snapshotBaseUnitPrice: 100, promoDiscountAmount: 20 }] });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const totals = within(await screen.findByRole("region", { name: "ملخص المبالغ" }));
+    expect(totals.getByText("كود الخصم (SAVE10)")).toBeInTheDocument();
+    expect(totals.getByText("التوفير بتخفيضات المنتجات")).toBeInTheDocument();
+  });
+
   it("keeps reconcile available and edits locked when an older rejected job masks a pending edit", async () => {
     fetchOrder.mockResolvedValue({ ...detailedOrder, shipping: { manualState: null, carrierState: "created", rawProviderCode: 10,
       rawProviderType: "SEND", custodyState: "unknown", collection: { confirmed: false, amountCents: null },

@@ -7,7 +7,8 @@ import { toNumber } from "./order/shared.js";
 type ReviewFlagType = typeof orderReviewFlags.$inferSelect.flagType;
 
 /** D27/O12: `untouched_paid` is an informational staff alert, not a shipping safety guard — it can be acknowledged to clear the notification and resolved through the alert endpoint, but must never hold a shipment; every other flag type stays a dispatch guard only the S13 staff action can clear. */
-export const INFORMATIONAL_REVIEW_FLAG_TYPES: ReviewFlagType[] = ["untouched_paid"];
+// `promo_free_review` (an order a promo code made free) is a staff alert too; it holds delivery through the dispatch job, not through this flag.
+export const INFORMATIONAL_REVIEW_FLAG_TYPES: ReviewFlagType[] = ["untouched_paid", "promo_free_review"];
 
 /** True when this flag is a real safety hold that must block dispatch. */
 export const isSafetyReviewFlag = (flagType: ReviewFlagType) => !INFORMATIONAL_REVIEW_FLAG_TYPES.includes(flagType);

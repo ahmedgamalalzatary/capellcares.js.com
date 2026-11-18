@@ -21,10 +21,20 @@ export const checkoutCollectionItemSchema = z.object({
 });
 
 const checkoutItemsSchema = z.array(z.union([checkoutProductItemSchema, checkoutOfferItemSchema, checkoutCollectionItemSchema])).min(1);
+
+/** A promo code as typed; matched without case or surrounding spaces. Empty text means no code. */
+const promoCodeTextSchema = z.string().trim().max(64).transform((value) => value || undefined).optional();
+
+/** The cart priced by the server, with an optional promo code (docs/promo-codes-spec.md section 5.1). */
+export const checkoutPriceRequestSchema = z.object({
+  items: checkoutItemsSchema,
+  promoCode: promoCodeTextSchema
+});
 export const checkoutShippingQuoteRequestSchema = z.object({
   items: checkoutItemsSchema,
   paymentMethod: z.enum(["cod", "paymob"]),
-  shippingAddress: shippingAddressSchema
+  shippingAddress: shippingAddressSchema,
+  promoCode: promoCodeTextSchema
 });
 
 export const checkoutSchema = z.object({
@@ -41,6 +51,7 @@ export const checkoutSchema = z.object({
   shippingAddress: shippingAddressSchema.optional(),
   shippingQuoteId: z.string().min(1).max(64).optional(),
   customerId: z.number().int().positive().nullable().optional(),
+  promoCode: promoCodeTextSchema,
   items: checkoutItemsSchema
 }).refine(input => Boolean(input.shippingAddress) === Boolean(input.shippingQuoteId), "Shipping address and quote must be supplied together")
   .refine(input => Boolean(input.shippingAddress) || GOVERNORATES.includes(input.governorate as (typeof GOVERNORATES)[number]), "Invalid governorate");

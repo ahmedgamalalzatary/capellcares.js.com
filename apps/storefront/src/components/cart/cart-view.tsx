@@ -10,6 +10,9 @@ import { ProductIllustration } from "@/components/ui/product-illustration";
 import { OfferIllustration } from "@/components/ui/offer-illustration";
 import { CollectionIllustration } from "@/components/ui/collection-illustration";
 import { Icon } from "@/components/ui/icons";
+import { PromoCodeBox } from "@/components/checkout/promo-code-box";
+import { useCartPromo } from "@/hooks/use-cart-promo";
+import { fillTemplate } from "@/lib/promo/promo-code";
 
 interface Resolved {
   key: string;
@@ -28,6 +31,7 @@ interface Resolved {
 
 export function CartView({ lang, dict }: { lang: Language; dict: any }) {
   const { lines, setQty, remove, keyOf } = useCart();
+  const cartPromo = useCartPromo(lang, lines);
   const [products, setProducts] = useState<Product[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -126,6 +130,9 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
 
   const subtotal = resolved.reduce((acc, r) => acc + r.unitPrice * r.qty, 0);
   const totalUnits = resolved.reduce((acc, r) => acc + r.qty, 0);
+  // With a promo code applied, the server's total is the one the customer will pay (spec section 5.1).
+  const appliedCode = cartPromo.applied?.promo?.status === "applied" ? cartPromo.applied.promo.code : null;
+  const productsTotal = cartPromo.applied ? cartPromo.applied.productsTotal : subtotal;
 
   // The cart has lines but the catalog hasn't resolved yet (or the resolve fetch failed): show a loading state, never the "empty" screen — collapsing this into the empty case is what let a slow/failed fetch blank a real cart.
   if (resolved.length === 0 && lines.length > 0 && !catalogLoaded) {
@@ -261,6 +268,12 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           <span className="text-(--ink-2)">{dict.common.subtotal}</span>
           <span className="text-ink">{formatPrice(subtotal, lang)}</span>
         </div>
+        {appliedCode ? (
+          <div className="flex items-center justify-between py-1.5 text-sm">
+            <span className="text-(--ink-2)">{fillTemplate(dict.promo.discountLine, { code: appliedCode })}</span>
+            <span className="text-(--success)">{formatPrice(productsTotal - subtotal, lang)}</span>
+          </div>
+        ) : null}
         <div className="flex items-center justify-between py-1.5 text-sm">
           <span className="text-(--ink-2)">{dict.common.shipping}</span>
           <span className="text-sm text-(--ink-3)">{dict.common.calculatedAtCheckout}</span>
@@ -270,8 +283,12 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           <span className={`text-accent leading-none ${lang === "ar"
             ? "text-2xl font-bold font-(family-name:--font-ar)"
             : "text-2xl font-(--font-display)"}`}>
-            {formatPrice(subtotal, lang)}
+            {formatPrice(productsTotal, lang)}
           </span>
+        </div>
+        <div className="mt-4">
+          <PromoCodeBox lang={lang} dict={dict} signedIn={cartPromo.signedIn} loginHref={cartPromo.loginHref} savedCode={cartPromo.savedCode}
+            promo={cartPromo.priced?.promo ?? null} preview={cartPromo.preview} onSave={cartPromo.saveCode} />
         </div>
         <Link href={`/${lang}/checkout`} className="btn btn--primary btn--block btn--lg mt-5">
           {dict.cart.proceed}
