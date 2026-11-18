@@ -41,6 +41,23 @@ export function directCancellationBlockedByFacts(order: Order, ship: typeof ship
 }
 
 /** Internal finalization only, after the worker proves carrier cancellation and warehouse custody or an unsent intent is stopped. */
+/** Marks a cancellation started by a staff deny, so the code use it gives back is recorded as denied. */
+export const STAFF_DENY_CANCELLATION_REASON = "Order denied by staff";
+
+/** Why the code use goes back, from what started the cancellation: a 96-hour expiry, a staff deny, or a real cancellation. */
+async function promoReleaseReason(tx: ShippingTransaction, orderId: number): Promise<"cancelled" | "denied" | "expired"> {
+  const [job] = await tx.select({ requestSnapshot: shippingWorkItems.requestSnapshot }).from(shippingWorkItems)
+    .where(eq(shippingWorkItems.idempotencyKey, `bosta_cancel_order_${orderId}`)).limit(1);
+  try {
+    const request = JSON.parse(job?.requestSnapshot ?? "{}") as { source?: string; reason?: string | null };
+    if (request.source === "expiry") return "expired";
+    if (request.source === "staff" && request.reason === STAFF_DENY_CANCELLATION_REASON) return "denied";
+  } catch {
+    // An unreadable request is still a cancellation.
+  }
+  return "cancelled";
+}
+
 export async function finishShippingCancellation(tx: ShippingTransaction, order: Order, now: Date) {
   if (order.cancellationStatus === "cancelled") return;
   if (order.stockRestoredAtMs === null) {
@@ -67,7 +84,7 @@ export async function finishShippingCancellation(tx: ShippingTransaction, order:
   await tx.update(shippingWorkItems).set({ status: "succeeded", lastError: null, claimedBy: null, claimedAt: null })
     .where(and(eq(shippingWorkItems.orderId, order.id), eq(shippingWorkItems.operation, "cancel_delivery")));
   // Only a completed cancellation gives the promo code use back; a cancellation still pending keeps it.
-  await releasePromoUse(tx, order.id, "cancelled");
+  await releasePromoUse(tx, order.id, await promoReleaseReason(tx, order.id));
   await tx.update(orderReviewFlags).set({ status: "resolved", resolvedAt: now }).where(and(eq(orderReviewFlags.orderId, order.id),
     eq(orderReviewFlags.flagType, "cancellation_pending"), eq(orderReviewFlags.status, "open")));
   if (refundRequiredCents > 0) await flagShippingOrder(tx, order.id, "refund_review", "Order safely cancelled and stock restored; issue the full products-plus-shipping refund manually in Paymob and await its verified callback");

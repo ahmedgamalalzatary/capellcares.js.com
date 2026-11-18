@@ -46,7 +46,7 @@ export interface CheckoutRequestDto {
 /** Why a promo code cannot be used right now (docs/promo-codes-spec.md section 9.4). */
 export type PromoRejectionReason =
   | "login_required" | "not_found" | "inactive" | "private" | "first_order" | "usage_limit" | "customer_limit" | "in_use"
-  | "below_min" | "above_max" | "min_pieces" | "no_effect" | "free_shipping_unavailable" | "gift_unavailable" | "online_payment_unavailable";
+  | "below_min" | "above_max" | "min_pieces" | "no_effect" | "free_shipping_unavailable" | "gift_unavailable";
 
 export type PromoRejectionDto = {
   status: "rejected";

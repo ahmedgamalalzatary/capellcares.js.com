@@ -4,7 +4,7 @@ import { and, eq, gt, gte, isNotNull, isNull, lte, notExists, or, sql } from "dr
 import { allowedPaymentStatuses, generateOrderCode, generatePendingOrderCode } from "./shared.js";
 import { enqueueOrderDelivery, stopUnsentDelivery, flagShippingOrder } from "../../shipping/shipping-dispatch.repository.js";
 import { untouchedShippingExpiryApplies } from "../../shipping/shipping-state.repository.js";
-import { requestShippingCancellationInTransaction, ShippingCancellationError } from "../../shipping/shipping-cancellation.repository.js";
+import { requestShippingCancellationInTransaction, ShippingCancellationError, STAFF_DENY_CANCELLATION_REASON } from "../../shipping/shipping-cancellation.repository.js";
 import { lockAndRecheckPromo, recordPromoUse, releasePromoUse, type PromoApplication } from "../../promos/promo-checkout.js";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -339,7 +339,7 @@ export async function updateOrderPaymentStatusRepo(
 
     if (paymentStatus === "denied") {
       if (existing.shippingSnapshot) {
-        try { await requestShippingCancellationInTransaction(tx, existing, "staff", { requireUnsent: true }); }
+        try { await requestShippingCancellationInTransaction(tx, existing, "staff", { requireUnsent: true, reason: STAFF_DENY_CANCELLATION_REASON }); }
         catch (error) { if (error instanceof ShippingCancellationError) throw new ShippingCustodyRequiredError(); throw error; }
         return;
       }

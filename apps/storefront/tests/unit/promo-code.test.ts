@@ -34,9 +34,11 @@ describe("promoRejectionMessage", () => {
     const en = getDict("en");
     expect(promoRejectionMessage({ status: "rejected", code: "X", reason: "not_found" }, en, "en")).toBe("This code doesn't exist.");
     expect(promoRejectionMessage({ status: "rejected", code: "X", reason: "below_min", missingAmount: 120 }, en, "en")).toMatch(/^Add .*120.* more to use this code\.$/);
-    expect(promoRejectionMessage({ status: "rejected", code: "X", reason: "min_pieces", missingPieces: 2 }, en, "en")).toBe("Add 2 more eligible items to use this code.");
+    expect(promoRejectionMessage({ status: "rejected", code: "X", reason: "min_pieces", missingPieces: 1 }, en, "en")).toBe("Eligible items still needed for this code: 1.");
     const ar = getDict("ar");
     expect(promoRejectionMessage({ status: "rejected", code: "X", reason: "first_order" }, ar, "ar")).toBe("هذا الكود للطلب الأول فقط.");
+    expect(promoRejectionMessage({ status: "rejected", code: "X", reason: "min_pieces", missingPieces: 1 }, ar, "ar")).toBe("عدد المنتجات المشمولة الناقصة لاستخدام هذا الكود: 1.");
+    expect(promoRejectionMessage({ status: "rejected", code: "X", reason: "below_min", missingAmount: 50 }, ar, "ar")).toMatch(/^أضيفي ما قيمته .*٥٠.* لاستخدام هذا الكود\.$/);
   });
 });
 

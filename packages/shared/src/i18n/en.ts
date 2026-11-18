@@ -274,11 +274,10 @@ export const en = {
       in_use: "This code is in use on another checkout.",
       below_min: "Add {amount} more to use this code.",
       above_max: "This code works for orders up to {amount}.",
-      min_pieces: "Add {count} more eligible items to use this code.",
+      min_pieces: "Eligible items still needed for this code: {count}.",
       no_effect: "This code doesn't apply to the items in your cart.",
       free_shipping_unavailable: "Free delivery isn't available right now.",
-      gift_unavailable: "The free gift is out of stock.",
-      online_payment_unavailable: "This code can't be used with online payment."
+      gift_unavailable: "The free gift is out of stock."
     }
   },
   checkout: {

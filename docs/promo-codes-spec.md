@@ -469,7 +469,7 @@ New keys alongside `discounts.manage`, granted per staff member by the admin:
 | In use | This code is in use on another checkout |
 | Below min | Add X EGP more to use this code |
 | Above max | This code works for orders up to X EGP |
-| Min pieces | Add N more eligible items to use this code |
+| Min pieces | Eligible items still needed for this code: N |
 | No effect | This code doesn't apply to items in your cart |
 | Free shipping unavailable | Free delivery isn't available right now |
 | Gift out of stock | The free gift is out of stock; the rest of the code still applies |
@@ -707,3 +707,5 @@ Each phase can be released on its own. It leaves production working and has its 
 - Update `docs/storefront-erp-spec.md` with the promo code rules.
 
 **Done when:** the full feature described in this document is in production.
+
+**As built (local, not yet deployed):** `apps/api/tests/services/promo-end-to-end.test.ts` runs one code with a discount, free delivery and a gift through COD (denied, then expired) and Paymob (paid, then partly refunded), checking stock (gift included), uses, the absorbed fee and the report. The same file places 25 checkouts at once on a 5-use code and gets exactly 5 orders. That run found that delivery orders denied by staff or expired after 96 hours gave their use back as `cancelled`; the cancellation now records `denied` or `expired`. Copy review: every promo message exists in both languages; the piece-count message no longer depends on plural forms, the Arabic minimum-amount message was reworded, and the unused `online_payment_unavailable` reason was removed. The Bosta and Paymob answers in §11.2–11.3 needed no further change. `docs/storefront-erp-spec.md` now has the promo code rules. **Still open:** deploying to production and checking it there against live Paymob and Bosta, which needs the owner's go-ahead.
