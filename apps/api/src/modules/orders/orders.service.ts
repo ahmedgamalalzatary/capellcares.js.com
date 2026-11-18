@@ -11,7 +11,7 @@ import { addMoney, multiplyMoney } from "./money.js";
 import { checkoutShippingEnabled, resolveShippingForCheckout } from "../shipping/checkout-shipping-runtime.js";
 import type { CheckoutShippingService } from "../shipping/checkout-shipping.service.js";
 import { notifyStaffOfNewOrder } from "./order-alert.js";
-import { evaluateCheckoutPromo, PromoRejectedError, type PromoApplication, type PromoPricedItem } from "../promos/promo-checkout.js";
+import { evaluateCheckoutPromo, PromoRejectedError, type PromoApplication, type PromoPricedItem, requireConfirmedSales } from "../promos/promo-checkout.js";
 import type { PromoAppliedDto, PromoRejectionDto } from "@capella/shared";
 
 export class CheckoutAmountChangedError extends Error {
@@ -345,6 +345,13 @@ export function requireAppliedPromo(priced: Awaited<ReturnType<typeof priceCheck
   return priced.promo.application;
 }
 
+/** The applied code for an order or payment: it must still apply, and any sale it replaces must be the one the customer confirmed. */
+export function requireConfirmedPromo(priced: Awaited<ReturnType<typeof priceCheckout>>, accepted: CheckoutPayload["promoAcceptedSales"]) {
+  const application = requireAppliedPromo(priced);
+  if (application && priced.promo!.dto.status === "applied") requireConfirmedSales(priced.promo!.dto, accepted);
+  return application;
+}
+
 export async function createOrderFromCheckout(
   payload: CheckoutPayload,
   options: { idempotencyKey: string; now?: Date; shippingService?: CheckoutShippingService; allowFreePrepaid?: boolean } = { idempotencyKey: randomUUID() }
@@ -362,7 +369,7 @@ export async function createOrderFromCheckout(
     return { id: existing.id, orderCode: existing.orderCode, paymentStatus: existing.paymentStatus, replayed: true };
   }
   const priced = await priceCheckout(payload, { now: options.now, ...(options.shippingService ? { shippingAvailable: true } : {}) });
-  const promo = requireAppliedPromo(priced);
+  const promo = requireConfirmedPromo(priced, payload.promoAcceptedSales);
   const shipping = await resolveShippingForCheckout(payload, priced, options.shippingService);
   const pricedItems = priced.items;
   const totalAmount = addMoney(priced.totalAmount, (shipping?.shippingAmountCents ?? 0) / 100);

@@ -40,6 +40,8 @@ export interface CheckoutRequestDto {
   customerId?: number | null;
   /** Promo code as typed by the customer; matched without case. */
   promoCode?: string;
+  /** The sale replacements the customer confirmed for the code, exactly as shown; required when the code replaces a sale. */
+  promoAcceptedSales?: Array<{ item: string; previousLineTotal: number; lineTotal: number }>;
   items: CheckoutItemDto[];
 }
 

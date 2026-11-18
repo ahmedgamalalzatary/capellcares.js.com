@@ -25,6 +25,20 @@ export class PromoRejectedError extends Error {
   }
 }
 
+/** The code now replaces sales the customer has not confirmed at these exact prices: checkout waits for a fresh confirmation. */
+export class PromoConfirmationRequiredError extends Error {
+  constructor(public readonly promo: PromoAppliedDto) {
+    super("Confirm the code's new prices before ordering");
+  }
+}
+
+/** Every sale the code replaces must be one the customer confirmed, for the same item and the same before and after prices. */
+export function requireConfirmedSales(promo: PromoAppliedDto, accepted: Array<{ item: string; previousLineTotal: number; lineTotal: number }> = []) {
+  const confirmed = (sale: PromoAppliedDto["replacedSales"][number]) => accepted.some((entry) => entry.item === sale.item &&
+    Math.round(entry.previousLineTotal * 100) === Math.round(sale.previousLineTotal * 100) && Math.round(entry.lineTotal * 100) === Math.round(sale.lineTotal * 100));
+  if (!promo.replacedSales.every(confirmed)) throw new PromoConfirmationRequiredError(promo);
+}
+
 /** One priced checkout line as produced by priceCheckout, before the code. */
 export type PromoPricedItem = {
   itemType: "product_variant" | "offer" | "collection";

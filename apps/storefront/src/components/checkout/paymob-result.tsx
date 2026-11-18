@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { formatPrice } from "@capella/shared";
+import { fillTemplate } from "@/lib/promo/promo-code";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/components/providers/cart-provider";
@@ -16,6 +18,9 @@ export function PaymobResult({ lang, dict, returnCheckoutId }: CheckoutViewProps
   const [status, setStatus] = useState<CheckoutStatus | null>(null);
   const [error, setError] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  // An expired checkout can still be paid late (Paymob accepts it); the order then appears here, but the cart the customer
+  // built since the expiry is theirs to keep.
+  const sawExpired = useRef(false);
 
   useEffect(() => {
     const savedLang = getPendingCheckoutLang();
@@ -31,8 +36,7 @@ export function PaymobResult({ lang, dict, returnCheckoutId }: CheckoutViewProps
   }, [lang, returnCheckoutId, router]);
 
   useEffect(() => {
-    if (!checkoutId || status?.status === "completed" || status?.status === "expired" ||
-      status?.status === "failed") return;
+    if (!checkoutId || status?.status === "completed" || status?.status === "failed") return;
     let cancelled = false;
     const refresh = () => {
       void fetchCheckoutStatus(checkoutId)
@@ -48,9 +52,10 @@ export function PaymobResult({ lang, dict, returnCheckoutId }: CheckoutViewProps
 
   useEffect(() => {
     if (status?.status === "completed" && status.order) {
-      clear();
+      if (!sawExpired.current) clear();
       clearPendingCheckout();
     } else if (status?.status === "expired" && status.latestAttemptStatus !== "reconciliation_required") {
+      sawExpired.current = true;
       clearPendingCheckout();
     }
   }, [clear, status]);
@@ -89,6 +94,11 @@ export function PaymobResult({ lang, dict, returnCheckoutId }: CheckoutViewProps
       {completed && <div className="rounded-(--radius) bg-(--warm-soft) px-6 py-3 text-xl text-ink">
         {status.order!.orderCode}
       </div>}
+      {completed && status.order!.promo && status.order!.promo.discountCents > 0 ? (
+        <p className="m-0 text-sm text-(--success)">
+          {fillTemplate(dict.promo.placedSaving, { code: status.order!.promo.code, amount: formatPrice(status.order!.promo.discountCents / 100, lang) })}
+        </p>
+      ) : null}
       {error && <p role="alert" className="m-0 text-sm text-(--danger)">{dict.checkout.paymentStatusUnavailable}</p>}
       {needsReview && <p className="m-0 break-all text-sm text-(--ink-2)">{dict.checkout.checkoutReference}: {checkoutId}</p>}
       {status?.canRetry && <button type="button" className="btn btn--primary" disabled={retrying}

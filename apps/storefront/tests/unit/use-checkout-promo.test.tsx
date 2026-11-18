@@ -208,3 +208,40 @@ it("keeps the code and its saving for the order confirmation", async () => {
   expect(result.current.orderId).toBe("ABCD-001");
   expect(result.current.placedPromo).toMatchObject({ code: "SAVE10", discount: 10 });
 });
+
+it("sends the sale replacements the customer confirmed with the order", async () => {
+  state.price.mockResolvedValue({ ...replacing, promo: { ...replacing.promo, replacedSales: [{ ...replacing.promo.replacedSales[0], item: "product_variant:11" }] } });
+  savePromoCode("save10", salesSignature([{ ...replacing.promo.replacedSales[0], item: "product_variant:11" }] as never));
+  state.quote.mockImplementation(async (input: { paymentMethod: string }) => ({ quoteId: "quote_promo", shippingAmountCents: 5000, size: "small",
+    rateIdentity: "fixture", quotedAt: new Date().toISOString(), productsTotalCents: 10800, amountCents: 15800,
+    codAmountCents: 15800, paymentMethod: input.paymentMethod, address }));
+  const { result } = renderHook(() => useCheckout({ lang: "en", dict: getDict("en") }));
+  await waitFor(() => expect(result.current.promo.productsTotal).toBe(108));
+  await fill(result);
+  await waitFor(() => expect(result.current.shipping.quote?.quoteId).toBe("quote_promo"));
+  await act(async () => result.current.placeOrder());
+  expect(state.submit.mock.calls[0][0].promoAcceptedSales).toEqual([{ item: "product_variant:11", previousLineTotal: 100, lineTotal: 108 }]);
+});
+
+it("prices the code again when checkout says its sale replacements changed, so the customer is asked to confirm", async () => {
+  state.submit.mockRejectedValue(Object.assign(new Error("Confirm"), { code: "PROMO_CONFIRMATION_REQUIRED" }));
+  const { result } = renderHook(() => useCheckout({ lang: "en", dict: getDict("en") }));
+  await waitFor(() => expect(result.current.promo.productsTotal).toBe(90));
+  await fill(result);
+  await waitFor(() => expect(result.current.shipping.quote?.quoteId).toBe("quote_promo"));
+  const calls = state.price.mock.calls.length;
+  await act(async () => result.current.placeOrder());
+  expect(result.current.errors.submit).toBe("Confirm the new prices for your code first.");
+  await waitFor(() => expect(state.price.mock.calls.length).toBeGreaterThan(calls));
+});
+
+it("prices the code again when checkout says the total changed", async () => {
+  state.submit.mockRejectedValue(Object.assign(new Error("Changed"), { code: "CHECKOUT_AMOUNT_CHANGED" }));
+  const { result } = renderHook(() => useCheckout({ lang: "en", dict: getDict("en") }));
+  await waitFor(() => expect(result.current.promo.productsTotal).toBe(90));
+  await fill(result);
+  await waitFor(() => expect(result.current.shipping.quote?.quoteId).toBe("quote_promo"));
+  const calls = state.price.mock.calls.length;
+  await act(async () => result.current.placeOrder());
+  await waitFor(() => expect(state.price.mock.calls.length).toBeGreaterThan(calls));
+});

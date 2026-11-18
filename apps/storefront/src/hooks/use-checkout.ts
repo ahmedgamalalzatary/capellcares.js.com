@@ -270,7 +270,12 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
         ...(shippingQuote ? { shippingQuoteId: shippingQuote.quoteId, shippingAddress: {
           cityId: shippingQuote.address.cityId, zoneId: shippingQuote.address.zoneId, districtId: shippingQuote.address.districtId
         } } : {}),
-        ...(appliedCode ? { promoCode: cartPromo.savedCode } : {}),
+        ...(appliedCode && promoApplied?.promo?.status === "applied" ? {
+          promoCode: cartPromo.savedCode,
+          // The sale replacements the customer confirmed, so the server never charges ones they have not seen.
+          promoAcceptedSales: promoApplied.promo.replacedSales.filter((sale) => sale.item)
+            .map((sale) => ({ item: sale.item!, previousLineTotal: sale.previousLineTotal, lineTotal: sale.lineTotal }))
+        } : {}),
         items
       };
 
@@ -294,6 +299,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
       if (code === "PROMO_REJECTED") cartPromo.saveCode(null);
       const message = rejected
         ? fillTemplate(dict.promo.removedAtCheckout, { code: rejected.code, reason: promoRejectionMessage(rejected, dict, lang) })
+        : code === "PROMO_CONFIRMATION_REQUIRED" ? dict.promo.confirmNeeded
         : code === "SHIPPING_QUOTE_CHANGED" ? dict.checkout.shippingChanged
         : code === "CHECKOUT_AMOUNT_CHANGED" ? dict.checkout.amountChanged
           : code === "SHIPPING_UNSUPPORTED" ? dict.checkout.shippingUnsupported
@@ -309,6 +315,10 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
       }));
       if (code === "SHIPPING_QUOTE_CHANGED" || code === "CHECKOUT_AMOUNT_CHANGED" || code === "PROMO_REJECTED") {
         setQuoted(null); setShippingRetry(value => value + 1);
+      }
+      // Prices moved on the server: price the code again, which asks for a fresh confirmation when its sale replacements changed.
+      if (appliedCode && (code === "PROMO_CONFIRMATION_REQUIRED" || code === "CHECKOUT_AMOUNT_CHANGED" || code === "SHIPPING_QUOTE_CHANGED")) {
+        cartPromo.refresh();
       }
     } finally {
       placingRef.current = false;

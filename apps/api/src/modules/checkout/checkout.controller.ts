@@ -5,7 +5,7 @@ import { PaymobProviderError } from "../payments/paymob/paymob-client.js";
 import { CheckoutAmountChangedError } from "../orders/orders.service.js";
 import { CheckoutShippingError } from "../shipping/checkout-shipping.service.js";
 import { PaymentEvidenceUnresolvedError } from "./paymob-checkout.service.js";
-import { PromoRejectedError } from "../promos/promo-checkout.js";
+import { PromoConfirmationRequiredError, PromoRejectedError } from "../promos/promo-checkout.js";
 
 export function checkoutController(req: AuthenticatedRequest, res: Response) {
   submitCheckout({
@@ -43,6 +43,10 @@ export function checkoutController(req: AuthenticatedRequest, res: Response) {
       }
       if (error instanceof PromoRejectedError) {
         res.status(409).json({ code: "PROMO_REJECTED", message: error.message, promo: error.rejection });
+        return;
+      }
+      if (error instanceof PromoConfirmationRequiredError) {
+        res.status(409).json({ code: "PROMO_CONFIRMATION_REQUIRED", message: error.message, promo: error.promo });
         return;
       }
       if (error instanceof CheckoutAmountChangedError) {

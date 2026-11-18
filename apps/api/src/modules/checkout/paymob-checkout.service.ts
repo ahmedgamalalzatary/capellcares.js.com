@@ -6,7 +6,7 @@ import type { CheckoutPayload } from "../../types/domain.js";
 import { normalizeEgyptianPhone, normalizePromoCode, type CheckoutShippingQuote } from "@capella/shared";
 import { createReservedCheckout } from "./checkout-reservation.repository.js";
 import { hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "./financial-evidence.repository.js";
-import { CheckoutAmountChangedError, priceCheckout, requireAppliedPromo, shippingWaivedCents } from "../orders/orders.service.js";
+import { CheckoutAmountChangedError, priceCheckout, requireConfirmedPromo, shippingWaivedCents } from "../orders/orders.service.js";
 import { releasePromoReservation } from "../promos/promo-checkout.js";
 import { resolveShippingForCheckout } from "../shipping/checkout-shipping-runtime.js";
 import type { CheckoutShippingService } from "../shipping/checkout-shipping.service.js";
@@ -137,7 +137,7 @@ export async function initiatePaymobCheckout(input: {
   // A caller that already priced and quoted (e.g. submitCheckout) passes the validated context so it is never recomputed. Absent context, resolve it exactly as before.
   const priced = input.priced ?? await priceCheckout(input.payload, { idempotencyKey: input.idempotencyKey,
     ...(input.shippingService ? { shippingAvailable: true } : {}) });
-  const promo = requireAppliedPromo(priced);
+  const promo = requireConfirmedPromo(priced, input.payload.promoAcceptedSales);
   const shipping = input.shipping !== undefined
     ? input.shipping
     : await resolveShippingForCheckout(input.payload, priced, input.shippingService);
@@ -180,7 +180,7 @@ export async function initiatePaymobCheckout(input: {
       (session.promoCodeId ?? null) !== (promo?.codeId ?? null)) {
       throw new Error("Idempotency key belongs to a different checkout");
     }
-    if (existing.clientSecret) {
+    if (existing.clientSecret && (existing.attemptStatus === "created" || existing.attemptStatus === "pending" || existing.state !== "payment_pending")) {
       if (existing.state === "completed") throw new Error("Checkout already completed");
       if (existing.state !== "payment_pending") throw new Error("Checkout is no longer payable");
       if (existing.expiresAt <= now) throw new Error("Checkout is no longer payable");
@@ -210,6 +210,11 @@ export async function initiatePaymobCheckout(input: {
   if (existing) {
     const reused = resolveReuse(existing);
     if (reused) return reused;
+    // The same checkout after a declined payment: the customer pays again on a fresh attempt of that session, never on the declined link.
+    if (existing.attemptStatus === "failed" && existing.clientSecret && existing.state === "payment_pending" && existing.expiresAt > now) {
+      return retryPaymobCheckout({ checkoutId: existing.checkoutId, config: input.config, notificationUrl: input.notificationUrl,
+        redirectionUrl: input.redirectionUrl, createIntention: input.createIntention, now });
+    }
     if (existing.attemptStatus === "reconciliation_required" &&
       existing.failureCode === "INTENTION_CREATION_AMBIGUOUS") {
       return retryPaymobCheckout({ checkoutId: existing.checkoutId, config: input.config,
@@ -468,11 +473,12 @@ type ReplayPayload = Parameters<typeof initiatePaymobCheckout>[0]["payload"];
  * same customer, contact, address and delivery quote, same items and the same code. Null otherwise (the full path then decides). */
 export async function replayPaymobCheckout(payload: ReplayPayload, idempotencyKey: string, config: PaymobConfig = resolvePaymobConfig(), now = new Date()) {
   if (!config.canInitiatePayments || !config.publicKey) return null;
-  const [row] = await db.select({ session: checkoutSessions, clientSecret: paymentAttempts.clientSecret }).from(checkoutSessions)
+  const [row] = await db.select({ session: checkoutSessions, clientSecret: paymentAttempts.clientSecret, attemptStatus: paymentAttempts.status }).from(checkoutSessions)
     .innerJoin(paymentAttempts, eq(paymentAttempts.checkoutSessionId, checkoutSessions.id))
     .where(eq(checkoutSessions.idempotencyKey, idempotencyKey))
     .orderBy(desc(paymentAttempts.attemptNumber)).limit(1);
-  if (!row?.clientSecret) return null;
+  // Only a link the customer can still pay with: a declined or parked attempt goes through the full path.
+  if (!row?.clientSecret || (row.attemptStatus !== "created" && row.attemptStatus !== "pending")) return null;
   const session = row.session;
   if (session.state !== "payment_pending" || session.reservationExpiresAt <= now) return null;
 

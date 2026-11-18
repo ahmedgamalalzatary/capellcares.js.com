@@ -137,6 +137,14 @@ describe("max discounted pieces", () => {
   });
 });
 
+describe("percentage precision", () => {
+  test("a percentage is applied from its stored hundredths, so a half-piastre rounds up", () => {
+    // 1.14% of EGP 25 is exactly 28.5 piastres; plain floating-point multiplication lands just under it.
+    const result = success(pricing(rules({ discountValue: 1.14 }), [variantLine({ original: 25 })]));
+    assert.equal(result.discountCents, 29);
+  });
+});
+
 describe("large carts", () => {
   test("works per line, not per piece, so a huge quantity costs no more than a small one", () => {
     // 5 billion pieces would not even fit in an array if every piece were its own object.

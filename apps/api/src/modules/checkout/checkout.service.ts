@@ -1,5 +1,5 @@
 import { EG_PHONE_REGEX, GOVERNORATES } from "@capella/shared/constants";
-import { createOrderFromCheckout, priceCheckout, requireAppliedPromo } from "../orders/orders.service.js";
+import { createOrderFromCheckout, priceCheckout, requireConfirmedPromo } from "../orders/orders.service.js";
 import type { CheckoutPayload } from "../../types/domain.js";
 import { resolvePaymobConfig } from "../payments/paymob/paymob-config.js";
 import { initiatePaymobCheckout, replayPaymobCheckout } from "./paymob-checkout.service.js";
@@ -59,7 +59,7 @@ export async function submitCheckout(payload: CheckoutPayload, options: { idempo
     if (replay) return replay;
     const priced = await priceCheckout(payload, { idempotencyKey: options.idempotencyKey.trim() });
     // A code that no longer applies is the first thing the customer hears about, before delivery or amount checks.
-    requireAppliedPromo(priced);
+    requireConfirmedPromo(priced, payload.promoAcceptedSales);
     const shipping = await resolveShippingForCheckout(payload, priced);
     if (priced.totalAmount === 0 && (shipping?.shippingAmountCents ?? 0) === 0) {
       return { kind: "cod_order" as const, ...await createOrderFromCheckout(payload, {

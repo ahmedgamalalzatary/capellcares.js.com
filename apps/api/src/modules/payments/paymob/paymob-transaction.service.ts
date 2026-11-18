@@ -209,6 +209,8 @@ async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransacti
         paymobTransactionId: String(transaction.id),
         integrationId: Number(transaction.integration_id)
       }).where(eq(paymentAttempts.id, match.attempt.id));
+      // The whole payment came back before any order: the code use is free again now (spec section 5.4).
+      if (refundedCents === match.attempt.amountCents) await releasePromoReservation(tx, match.session.id, "early_refund");
       return { outcome: "refund_pending_success" as const };
     }
     const validIdentity = baseIdentity && transaction.is_refunded === false;
@@ -249,25 +251,7 @@ async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransacti
       return { outcome: "rejected" as const };
     }
 
-    const reservations = await tx.select().from(checkoutReservations)
-      .where(and(
-        eq(checkoutReservations.checkoutSessionId, match.session.id),
-        eq(checkoutReservations.state, "reserved")
-      )).for("update");
-    // A payment that lands after its checkout expired is still honored when the stock it held is free again (spec section 3.6):
-    // the customer paid, so they get the order. Otherwise it waits for staff to refund, as before; once parked for staff it
-    // stays with them, since they may already have refunded it.
-    if (reservations.length === 0 && (match.attempt.earlyRefundAmountCents > 0 || match.session.state !== "expired" ||
-      match.attempt.status === "reconciliation_required" ||
-      !await retakeReleasedStock(tx, match.session.id))) {
-      await tx.update(paymentAttempts).set({
-        status: "reconciliation_required",
-        paymobTransactionId: String(transaction.id),
-        failureCode: "PAID_AFTER_RESERVATION_RELEASE"
-      }).where(eq(paymentAttempts.id, match.attempt.id));
-      return { outcome: "reconciliation_required" as const };
-    }
-
+    // The saved checkout must add up before anything else, so a mismatch never retakes stock it would then strand.
     const snapshot = JSON.parse(match.session.cartSnapshot) as Array<Record<string, any>>;
     if (!Array.isArray(snapshot) || snapshot.length === 0) throw new Error("Checkout snapshot is invalid");
     const shipping = match.session.shippingSnapshot ? checkoutShippingQuoteSchema.parse(JSON.parse(match.session.shippingSnapshot)) : null;
@@ -281,6 +265,26 @@ async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransacti
         paymobTransactionId: String(transaction.id) }).where(eq(paymentAttempts.id, match.attempt.id));
       return { outcome: "reconciliation_required" as const };
     }
+    const reservations = await tx.select().from(checkoutReservations)
+      .where(and(
+        eq(checkoutReservations.checkoutSessionId, match.session.id),
+        eq(checkoutReservations.state, "reserved")
+      )).for("update");
+    // A payment that lands after its checkout expired is still honored when the stock it held is free again (spec section 3.6):
+    // the customer paid, so they get the order. Otherwise it waits for staff to refund, as before; once parked for staff it
+    // stays with them, since they may already have refunded it.
+    const latePayment = reservations.length === 0;
+    if (latePayment && (match.attempt.earlyRefundAmountCents > 0 || match.session.state !== "expired" ||
+      match.attempt.status === "reconciliation_required" ||
+      !await retakeReleasedStock(tx, match.session.id))) {
+      await tx.update(paymentAttempts).set({
+        status: "reconciliation_required",
+        paymobTransactionId: String(transaction.id),
+        failureCode: "PAID_AFTER_RESERVATION_RELEASE"
+      }).where(eq(paymentAttempts.id, match.attempt.id));
+      return { outcome: "reconciliation_required" as const };
+    }
+
     const [order] = await tx.insert(orders).values({
       orderCode: generatePendingOrderCode(),
       customerType: match.session.customerType,
@@ -352,7 +356,8 @@ async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransacti
       .where(eq(checkoutSessions.id, match.session.id));
     await enqueueOrderDelivery(tx, order.id);
     if (match.attempt.earlyRefundAmountCents > 0) await blockRefundedDelivery(tx, order.id);
-    if (match.session.customerId != null) {
+    // A late payment is for a checkout the customer already saw expire: the cart they have built since is theirs to keep.
+    if (match.session.customerId != null && !latePayment) {
       await tx.update(carts).set({ lines: [] }).where(eq(carts.customerId, match.session.customerId));
     }
     return { outcome: "succeeded" as const, orderId: order.id, paymentAttemptId: match.attempt.id, checkoutSessionId: match.session.id };

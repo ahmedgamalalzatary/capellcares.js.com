@@ -167,6 +167,32 @@ describe("PaymobResult", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
+  it("keeps checking an expired checkout, so a late payment shows its order without emptying the cart built since", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    try {
+      fetchCheckoutStatus.mockResolvedValueOnce({ checkoutId: "checkout_late", status: "expired",
+        expiresAt: new Date(Date.now() - 300000).toISOString(), attemptsUsed: 1, latestAttemptStatus: "expired", canRetry: false, order: null });
+      fetchCheckoutStatus.mockResolvedValue({ checkoutId: "checkout_late", status: "completed",
+        expiresAt: new Date(Date.now() - 300000).toISOString(), attemptsUsed: 1, latestAttemptStatus: "succeeded", canRetry: false,
+        order: { id: 8, orderCode: "CAP-8", promo: null } });
+      render(<PaymobResult lang="en" dict={getDict("en")} returnCheckoutId="checkout_late" />);
+      expect(await screen.findByText("Checkout expired")).toBeInTheDocument();
+      await act(async () => { vi.advanceTimersByTime(4000); });
+      expect(await screen.findByText("CAP-8")).toBeInTheDocument();
+      expect(clear).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("shows the code the paid order used and what it saved", async () => {
+    fetchCheckoutStatus.mockResolvedValue({ checkoutId: "checkout_abc", status: "completed",
+      expiresAt: new Date(Date.now() + 300000).toISOString(), attemptsUsed: 1, latestAttemptStatus: "succeeded", canRetry: false,
+      order: { id: 7, orderCode: "CAP-7", promo: { code: "SAVE10", discountCents: 1250 } } });
+    render(<PaymobResult lang="en" dict={getDict("en")} returnCheckoutId="checkout_abc" />);
+    expect(await screen.findByText(/Code SAVE10 saved you EGP\s*12\.5$/)).toBeInTheDocument();
+  });
+
   it("stops polling and offers a return path when the checkout session has failed", async () => {
     vi.useFakeTimers();
     try {

@@ -217,7 +217,8 @@ export type CheckoutStatus = {
   attemptsUsed: number;
   latestAttemptStatus: string | null;
   canRetry: boolean;
-  order: { id: number; orderCode: string } | null;
+  /** `promo`: the code the paid order used and what it took off, in piastres. */
+  order: { id: number; orderCode: string; promo?: { code: string; discountCents: number } | null } | null;
 };
 
 export async function fetchPaymobMethods(): Promise<PaymobMethodAvailability> {

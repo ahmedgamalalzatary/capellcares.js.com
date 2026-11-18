@@ -146,7 +146,8 @@ export function applyPromoPricing(rules: PromoRules, lines: PromoLine[], context
   let chosenOriginalCents = lineOriginalCents.reduce((sum, cents) => sum + cents, 0);
   let discountCents = 0;
   if (rules.discountType === "percentage" && rules.discountValue) {
-    discountCents = Math.round(chosenOriginalCents * rules.discountValue / 100);
+    // In whole hundredths of a percent (the stored precision), so the result is exact before rounding to piastres.
+    discountCents = Math.round(chosenOriginalCents * Math.round(rules.discountValue * 100) / 10000);
     if (rules.maxDiscountAmount !== null) discountCents = Math.min(discountCents, toCents(rules.maxDiscountAmount));
   } else if (rules.discountType === "fixed" && rules.discountValue) {
     discountCents = Math.min(toCents(rules.discountValue), chosenOriginalCents);

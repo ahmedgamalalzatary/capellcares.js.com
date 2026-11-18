@@ -17,7 +17,9 @@ export async function getCheckoutStatusController(req: Request, res: Response): 
     sessionId: checkoutSessions.id,
     attemptsUsed: checkoutSessions.attemptCount,
     orderId: orders.id,
-    orderCode: orders.orderCode
+    orderCode: orders.orderCode,
+    promoCodeText: orders.promoCodeText,
+    promoDiscountCents: orders.promoDiscountCents
   }).from(checkoutSessions)
     .leftJoin(orders, eq(orders.id, checkoutSessions.createdOrderId))
     .where(eq(checkoutSessions.publicId, checkoutId)).limit(1);
@@ -40,6 +42,7 @@ export async function getCheckoutStatusController(req: Request, res: Response): 
     latestAttemptStatus: latestAttempt?.status ?? null,
     canRetry: !unresolved && session.status === "payment_pending" && latestAttempt?.status === "failed" &&
       session.attemptsUsed < 3 && session.expiresAt > new Date(),
-    order: session.orderId && session.orderCode ? { id: session.orderId, orderCode: session.orderCode } : null
+    order: session.orderId && session.orderCode ? { id: session.orderId, orderCode: session.orderCode,
+      promo: session.promoCodeText ? { code: session.promoCodeText, discountCents: session.promoDiscountCents ?? 0 } : null } : null
   });
 }

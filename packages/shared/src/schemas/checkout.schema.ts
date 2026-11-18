@@ -60,6 +60,9 @@ export const checkoutSchema = z.object({
   shippingQuoteId: z.string().min(1).max(64).optional(),
   customerId: z.number().int().positive().nullable().optional(),
   promoCode: promoCodeTextSchema,
+  /** The sale replacements the customer confirmed for the code, exactly as shown (spec sections 3.4 and 7, case 26). */
+  promoAcceptedSales: z.array(z.object({ item: z.string().min(1).max(64), previousLineTotal: z.number().finite(), lineTotal: z.number().finite() }).strict())
+    .max(200).optional(),
   items: checkoutItemsSchema
 }).refine(input => Boolean(input.shippingAddress) === Boolean(input.shippingQuoteId), "Shipping address and quote must be supplied together")
   .refine(input => Boolean(input.shippingAddress) || GOVERNORATES.includes(input.governorate as (typeof GOVERNORATES)[number]), "Invalid governorate");
