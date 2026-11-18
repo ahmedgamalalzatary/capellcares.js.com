@@ -4,8 +4,15 @@ import type { CheckoutPayload } from "../../types/domain.js";
 import { resolvePaymobConfig } from "../payments/paymob/paymob-config.js";
 import { initiatePaymobCheckout } from "./paymob-checkout.service.js";
 import { resolveShippingForCheckout } from "../shipping/checkout-shipping-runtime.js";
-import { PromoRejectedError } from "../promos/promo-checkout.js";
-import { normalizePromoCode } from "@capella/shared";
+
+/** Paymob's smallest online payment (spec section 3.5); a cheaper non-free total must use cash on delivery. */
+export const PAYMOB_MINIMUM_CENTS = 1000;
+
+export class PaymobMinimumError extends Error {
+  constructor() {
+    super("Online payment needs a total of at least EGP 10");
+  }
+}
 
 export class PaymobUnavailableError extends Error {
   constructor() {
@@ -47,10 +54,6 @@ export async function submitCheckout(payload: CheckoutPayload, options: { idempo
   if (!options.idempotencyKey?.trim()) {
     throw new Error("Idempotency-Key header is required for checkout");
   }
-  if (payload.paymentMethod === "paymob" && payload.promoCode) {
-    // Promo codes are cash-on-delivery only until online payment carries the code (spec phase 3).
-    throw new PromoRejectedError({ status: "rejected", code: normalizePromoCode(payload.promoCode), reason: "online_payment_unavailable" });
-  }
   if (payload.paymentMethod === "paymob") {
     const priced = await priceCheckout(payload);
     const shipping = await resolveShippingForCheckout(payload, priced);
@@ -59,6 +62,8 @@ export async function submitCheckout(payload: CheckoutPayload, options: { idempo
         idempotencyKey: options.idempotencyKey.trim(), allowFreePrepaid: true
       }) };
     }
+    const amountCents = Math.round(priced.totalAmount * 100) + (shipping?.shippingAmountCents ?? 0);
+    if (amountCents < PAYMOB_MINIMUM_CENTS) throw new PaymobMinimumError();
     const config = resolvePaymobConfig();
     const notificationUrl = process.env.PAYMOB_NOTIFICATION_URL?.trim();
     const redirectionUrl = process.env.PAYMOB_REDIRECTION_URL?.trim();

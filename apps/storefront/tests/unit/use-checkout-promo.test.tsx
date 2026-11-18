@@ -45,12 +45,9 @@ async function fill(result: any) {
   await act(async () => result.current.setField("shippingDistrictId", "district-1"));
 }
 
-it("quotes, totals and submits the server-priced cart with the code, as cash on delivery", async () => {
+it("quotes, totals and submits the server-priced cart with the code", async () => {
   const { result } = renderHook(() => useCheckout({ lang: "en", dict: getDict("en") }));
   await waitFor(() => expect(result.current.promo.productsTotal).toBe(90));
-  expect(result.current.paymobMethods).toEqual([]);
-  expect(result.current.promo.codOnly).toBe(true);
-  await act(async () => result.current.setField("paymentMethod", "paymob"));
   await fill(result);
   await waitFor(() => expect(result.current.shipping.quote?.quoteId).toBe("quote_promo"));
   expect(state.quote).toHaveBeenLastCalledWith(expect.objectContaining({ promoCode: "save10", paymentMethod: "cod" }), "token", true);
@@ -58,6 +55,32 @@ it("quotes, totals and submits the server-priced cart with the code, as cash on 
 
   await act(async () => result.current.placeOrder());
   expect(state.submit).toHaveBeenCalledWith(expect.objectContaining({ promoCode: "save10", paymentMethod: "cod", expectedAmountCents: 14000 }), "token", expect.anything());
+});
+
+it("keeps online payment available with a code", async () => {
+  const { result } = renderHook(() => useCheckout({ lang: "en", dict: getDict("en") }));
+  await waitFor(() => expect(result.current.promo.productsTotal).toBe(90));
+  expect(result.current.paymobMethods).toEqual(["card"]);
+  await act(async () => result.current.setField("paymentMethod", "paymob"));
+  await fill(result);
+  await waitFor(() => expect(result.current.shipping.quote?.paymentMethod).toBe("paymob"));
+  await act(async () => result.current.placeOrder());
+  expect(state.submit.mock.calls[0][0]).toMatchObject({ promoCode: "save10", paymentMethod: "paymob" });
+});
+
+it("hides online payment and explains why when the code brings the total under EGP 10", async () => {
+  state.price.mockResolvedValue({ ...applied, productsTotal: 5, items: [{ ...applied.items[0], lineTotal: 5, promoDiscount: 95 }] });
+  state.quote.mockImplementation(async (input: { paymentMethod: string }) => ({ quoteId: "quote_small", shippingAmountCents: 0, size: "small",
+    rateIdentity: "fixture", quotedAt: new Date().toISOString(), productsTotalCents: 500, amountCents: 500,
+    codAmountCents: input.paymentMethod === "cod" ? 500 : 0, paymentMethod: input.paymentMethod, address }));
+  const { result } = renderHook(() => useCheckout({ lang: "en", dict: getDict("en") }));
+  await waitFor(() => expect(result.current.promo.productsTotal).toBe(5));
+  await act(async () => result.current.setField("paymentMethod", "paymob"));
+  await fill(result);
+  await waitFor(() => expect(result.current.shipping.quote?.quoteId).toBe("quote_small"));
+  await waitFor(() => expect(result.current.form.paymentMethod).toBe("cod"));
+  expect(result.current.paymobMethods).toEqual([]);
+  expect(result.current.promo.onlineMinimum).toBe(true);
 });
 
 it("removes a saved code that no longer applies and says why", async () => {

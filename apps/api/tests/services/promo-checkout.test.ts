@@ -19,7 +19,6 @@ import { app } from "../../src/app.js";
 import { createOrderFromCheckout, priceCheckout } from "../../src/modules/orders/orders.service.js";
 import { expirePendingCodOrders, updateOrderPaymentStatusRepo } from "../../src/modules/orders/order.repository.js";
 import { PromoRejectedError } from "../../src/modules/promos/promo-checkout.js";
-import { submitCheckout } from "../../src/modules/checkout/checkout.service.js";
 import { createTestAdminUser, getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { shippingSyncFixture } from "../helpers/shipping-sync.js";
 import { withTestServer } from "../helpers/request.js";
@@ -162,13 +161,6 @@ test("first-order and private codes check the account and the checkout phone", a
   assert.equal((await priceCheckout({ ...payload, promoCode: "vip" })).promo?.dto.reason, "private");
   await db.insert(promoCodeCustomers).values({ promoCodeId: privateId, customerId: ids.customerId });
   assert.equal((await priceCheckout({ ...payload, promoCode: "vip" })).promo?.dto.status, "applied");
-});
-
-test("online payment with a code is refused until Paymob supports codes", async () => {
-  const { payload } = await buyer({ paymentMethod: "paymob" });
-  await createCode();
-  await assert.rejects(submitCheckout(payload, { idempotencyKey: crypto.randomUUID() }),
-    (error: unknown) => error instanceof PromoRejectedError && error.rejection.reason === "online_payment_unavailable");
 });
 
 test("staff denying a COD order gives the code use back, so a single-use code works again", async () => {

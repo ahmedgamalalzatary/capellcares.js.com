@@ -3,6 +3,7 @@ import { db } from "@capella/database/src/db";
 import { checkoutReservations, checkoutSessions, paymentAttempts, paymobCallbackInbox, productVariants } from "@capella/database/drizzle/schema";
 import { UNRESOLVED_INBOX_STATUSES, hasUnresolvedFinancialEvidence, sessionAwaitsReconciliation, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "./financial-evidence.repository.js";
 import { sqlReceiptHoldsStock } from "./receipt-hold-policy.js";
+import { lockAndRecheckPromo, releasePromoReservation, reservePromoUse, type PromoApplication } from "../promos/promo-checkout.js";
 
 interface ReservedCheckoutInput {
   publicId: string;
@@ -23,6 +24,8 @@ interface ReservedCheckoutInput {
   shippingSnapshot?: string | null;
   reservationExpiresAt: Date;
   reservations: Array<{ variantId: number; qty: number }>;
+  /** The promo code this checkout uses: re-checked under the code's row lock and one use held while the customer pays. */
+  promo?: PromoApplication | null;
   initialAttempt?: {
     merchantReference: string;
     environment: "test" | "live";
@@ -33,6 +36,7 @@ interface ReservedCheckoutInput {
 
 export async function createReservedCheckout(input: ReservedCheckoutInput) {
   return db.transaction(async (tx) => {
+    if (input.promo) await lockAndRecheckPromo(tx, input.promo);
     const [session] = await tx.insert(checkoutSessions).values({
       publicId: input.publicId,
       idempotencyKey: input.idempotencyKey,
@@ -53,8 +57,15 @@ export async function createReservedCheckout(input: ReservedCheckoutInput) {
       currency: "EGP",
       state: "payment_pending",
       attemptCount: input.initialAttempt ? 1 : 0,
-      reservationExpiresAt: input.reservationExpiresAt
+      reservationExpiresAt: input.reservationExpiresAt,
+      ...(input.promo ? {
+        promoCodeId: input.promo.codeId,
+        promoCodeText: input.promo.codeText,
+        promoSnapshot: input.promo.snapshot,
+        promoDiscountCents: input.promo.discountCents
+      } : {})
     }).$returningId();
+    if (input.promo) await reservePromoUse(tx, input.promo, session.id);
 
     for (const reservation of input.reservations) {
       const result = await tx.update(productVariants)
@@ -175,6 +186,10 @@ export async function releaseExpiredCheckoutReservations(
         .where(and(eq(paymentAttempts.checkoutSessionId, session.id),
           eq(paymentAttempts.earlyRefundAmountCents, 0),
           inArray(paymentAttempts.status, ["created", "pending"])));
+      // A refund that arrived before the order existed means the customer was paid back: the code use goes back as an early refund.
+      const [refunded] = await tx.select({ id: paymentAttempts.id }).from(paymentAttempts)
+        .where(and(eq(paymentAttempts.checkoutSessionId, session.id), gt(paymentAttempts.earlyRefundAmountCents, 0))).limit(1);
+      await releasePromoReservation(tx, session.id, refunded ? "early_refund" : "session_expired");
       await tx.update(checkoutSessions)
         .set({ state: "expired" })
         .where(eq(checkoutSessions.id, session.id));

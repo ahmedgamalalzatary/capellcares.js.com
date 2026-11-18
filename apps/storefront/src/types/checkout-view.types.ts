@@ -62,8 +62,8 @@ export interface CheckoutPromoState {
   productsTotal: number;
   /** Why a saved code was just removed at checkout. */
   notice: string | null;
-  /** The customer could pay online, but not with a promo code yet. */
-  codOnly: boolean;
+  /** Online payment is hidden because the total is under Paymob's EGP 10 minimum. */
+  onlineMinimum: boolean;
 }
 
 export interface CheckoutSummaryProps extends CheckoutViewProps {

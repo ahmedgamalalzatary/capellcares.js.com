@@ -626,6 +626,10 @@ Each phase can be released on its own. It leaves production working and has its 
 
 **Done when:** a Paymob order with a code is created without `reconciliation_required`, and the reserve, use and release paths are tested, including late payment.
 
+**As built:** `createReservedCheckout` re-checks the code under its row lock and inserts a `reserved` redemption. The webhook copies the session's promo columns and line amounts onto the order and converts the redemption to `used`. Releases happen on initiation rejection and recycling (`payment_failed`), on the third decline (`payment_failed`), and on session expiry (`session_expired`, or `early_refund` when Paymob refunded before the order existed). A limit reached only because of open online payments returns `in_use`. Payments under EGP 10 return `PAYMENT_MINIMUM`, and the storefront hides online payment below that.
+
+**Late payment, in practice:** today a payment that lands after its reservation was released creates no order. The checkout is parked as `PAID_AFTER_RESERVATION_RELEASE` for staff to refund, and the code use stays released. The `over_limit` conversion (a released hold honored when an order is created) is a safety net for any path that does create such an order.
+
 ### Phase 4: First-order and private codes
 
 **Goal:** targeted codes.

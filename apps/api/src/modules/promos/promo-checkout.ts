@@ -58,7 +58,7 @@ export type PromoEvaluation =
   | { status: "applied"; code: PromoCodeRow; result: Extract<PromoPricingResult, { ok: true }>; dto: PromoAppliedDto; application: PromoApplication }
   | { status: "rejected"; dto: PromoRejectionDto };
 
-const rejection = (code: string, failure: PromoAccessFailure | Exclude<PromoPricingResult, { ok: true }>): PromoRejectionDto => {
+const rejection = (code: string, failure: PromoAccessFailure | "in_use" | Exclude<PromoPricingResult, { ok: true }>): PromoRejectionDto => {
   if (typeof failure === "string") return { status: "rejected", code, reason: failure };
   const { ok: _ok, ...rest } = failure;
   return { status: "rejected", code, ...rest };
@@ -70,15 +70,21 @@ async function loadCode(codeText: string, executor: Executor = db, lock = false)
   return row ?? null;
 }
 
-/** Reserved plus used redemptions: everyone's, and this customer's by account or by phone (so a re-created account still counts). */
+/** Reserved plus used redemptions: everyone's, and this customer's by account or by phone (so a re-created account still counts); with how many of each are only reserved by an open online payment. */
 async function usageCounts(executor: Executor, codeId: number, customerId: number, phone: string | null) {
   const live = and(eq(promoRedemptions.promoCodeId, codeId), inArray(promoRedemptions.state, ["reserved", "used"]));
   const mine = phone ? or(eq(promoRedemptions.customerId, customerId), eq(promoRedemptions.phoneNormalized, phone)) : eq(promoRedemptions.customerId, customerId);
+  const counts = { live: sql<number>`count(*)`, reserved: sql<number>`sum(${promoRedemptions.state} = 'reserved')` };
   const [[total], [own]] = await Promise.all([
-    executor.select({ count: sql<number>`count(*)` }).from(promoRedemptions).where(live),
-    executor.select({ count: sql<number>`count(*)` }).from(promoRedemptions).where(and(live, mine))
+    executor.select(counts).from(promoRedemptions).where(live),
+    executor.select(counts).from(promoRedemptions).where(and(live, mine))
   ]);
-  return { usedTotal: Number(total?.count ?? 0), usedByCustomer: Number(own?.count ?? 0) };
+  return {
+    usedTotal: Number(total?.live ?? 0),
+    usedByCustomer: Number(own?.live ?? 0),
+    reservedTotal: Number(total?.reserved ?? 0),
+    reservedByCustomer: Number(own?.reserved ?? 0)
+  };
 }
 
 /** Any earlier order by this account or this checkout phone, whatever happened to it (cancelled, denied and expired count). */
@@ -101,7 +107,12 @@ async function accessFailure(executor: Executor, code: PromoCodeRow | null, cust
     code.firstOrderOnly ? hasPreviousOrder(executor, customerId, phone) : Promise.resolve(false),
     code.isPrivate ? isOnPrivateList(executor, code.id, customerId) : Promise.resolve(false)
   ]);
-  return validatePromoAccess(code, { customerId, now, onPrivateList: listed, hasPreviousOrder: previous, ...counts });
+  const failure = validatePromoAccess(code, { customerId, now, onPrivateList: listed, hasPreviousOrder: previous,
+    usedTotal: counts.usedTotal, usedByCustomer: counts.usedByCustomer });
+  // A limit reached only because another checkout is paying online right now is "in use", not "used up" (spec section 6.2).
+  if (failure === "usage_limit" && counts.usedTotal - counts.reservedTotal < code.totalUsageLimit!) return "in_use";
+  if (failure === "customer_limit" && counts.usedByCustomer - counts.reservedByCustomer < code.perCustomerLimit!) return "in_use";
+  return failure;
 }
 
 async function loadRules(code: PromoCodeRow): Promise<PromoRules> {
@@ -229,6 +240,34 @@ export async function recordPromoUse(tx: Executor, application: PromoApplication
     state: "used",
     discountCents: application.discountCents
   });
+}
+
+/** An online checkout holds one use of the code while the customer pays (spec section 6). */
+export async function reservePromoUse(tx: Executor, application: PromoApplication, checkoutSessionId: number) {
+  await tx.insert(promoRedemptions).values({
+    promoCodeId: application.codeId,
+    customerId: application.customerId,
+    phoneNormalized: application.phone,
+    checkoutSessionId,
+    state: "reserved",
+    discountCents: application.discountCents
+  });
+}
+
+/** The paid checkout became an order: its held use is now used. The code is never re-checked here; a payment that lands after
+ * its hold was released is still honored and marked over the limit (spec section 3.6). */
+export async function convertPromoReservation(tx: Executor, checkoutSessionId: number, orderId: number) {
+  const [held] = await tx.select({ id: promoRedemptions.id, state: promoRedemptions.state }).from(promoRedemptions)
+    .where(eq(promoRedemptions.checkoutSessionId, checkoutSessionId)).limit(1).for("update");
+  if (!held || held.state === "used") return;
+  await tx.update(promoRedemptions).set({ state: "used", orderId, releaseReason: null, overLimit: held.state === "released" })
+    .where(eq(promoRedemptions.id, held.id));
+}
+
+/** An online checkout ended without an order: its held use goes back. */
+export async function releasePromoReservation(tx: Executor, checkoutSessionId: number, reason: "payment_failed" | "session_expired" | "early_refund") {
+  await tx.update(promoRedemptions).set({ state: "released", releaseReason: reason })
+    .where(and(eq(promoRedemptions.checkoutSessionId, checkoutSessionId), eq(promoRedemptions.state, "reserved")));
 }
 
 /** Gives a used code back when its order is denied, expires or completes cancellation (spec section 6.1). Partial returns never call this. */

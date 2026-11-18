@@ -58,7 +58,7 @@ export function CheckoutSummary({ lang, dict, resolved, subtotal, shippingAmount
           <PromoCodeBox lang={lang} dict={dict} signedIn={promo.signedIn} loginHref={promo.loginHref} savedCode={promo.savedCode}
             promo={promo.result} preview={promo.preview} onSave={promo.saveCode} />
           {promo.notice ? <p role="status" className="m-0 text-sm text-(--error)">{promo.notice}</p> : null}
-          {promo.codOnly ? <p className="m-0 text-xs text-(--ink-3)">{dict.promo.codOnly}</p> : null}
+          {promo.onlineMinimum ? <p className="m-0 text-xs text-(--ink-3)">{dict.promo.onlineMinimum}</p> : null}
         </div>
       ) : null}
     </aside>

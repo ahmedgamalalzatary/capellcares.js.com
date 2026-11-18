@@ -6,7 +6,8 @@ import type { CheckoutPayload } from "../../types/domain.js";
 import { normalizeEgyptianPhone, type CheckoutShippingQuote } from "@capella/shared";
 import { createReservedCheckout } from "./checkout-reservation.repository.js";
 import { hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "./financial-evidence.repository.js";
-import { CheckoutAmountChangedError, priceCheckout } from "../orders/orders.service.js";
+import { CheckoutAmountChangedError, priceCheckout, requireAppliedPromo } from "../orders/orders.service.js";
+import { releasePromoReservation } from "../promos/promo-checkout.js";
 import { resolveShippingForCheckout } from "../shipping/checkout-shipping-runtime.js";
 import type { CheckoutShippingService } from "../shipping/checkout-shipping.service.js";
 import type { PaymobConfig } from "../payments/paymob/paymob-config.js";
@@ -78,6 +79,7 @@ async function failPaymobInitiation(sessionId: number, attemptId: number) {
       .where(eq(paymentAttempts.id, attemptId));
     if (session.state === "completed" || await paymentEvidenceUnresolved(tx, sessionId)) return;
     await releaseReservedStock(tx, sessionId);
+    await releasePromoReservation(tx, sessionId, "payment_failed");
     await tx.update(checkoutSessions).set({ state: "failed" })
       .where(eq(checkoutSessions.id, sessionId));
   });
@@ -130,6 +132,7 @@ export async function initiatePaymobCheckout(input: {
   }
   // A caller that already priced and quoted (e.g. submitCheckout) passes the validated context so it is never recomputed. Absent context, resolve it exactly as before.
   const priced = input.priced ?? await priceCheckout(input.payload);
+  const promo = requireAppliedPromo(priced);
   const shipping = input.shipping !== undefined
     ? input.shipping
     : await resolveShippingForCheckout(input.payload, priced, input.shippingService);
@@ -253,6 +256,7 @@ export async function initiatePaymobCheckout(input: {
         }
         if (await paymentEvidenceUnresolved(tx, session.id)) throw new PaymentEvidenceUnresolvedError();
         await releaseReservedStock(tx, existing.sessionId);
+        await releasePromoReservation(tx, existing.sessionId, "payment_failed");
         await tx.delete(checkoutSessions).where(eq(checkoutSessions.id, existing.sessionId));
       });
     }
@@ -281,6 +285,7 @@ export async function initiatePaymobCheckout(input: {
         shippingSnapshot,
         reservationExpiresAt: expiresAt,
         reservations: priced.reservations,
+        promo,
         initialAttempt: { merchantReference, environment: input.config.mode,
           allowedIntegrationIds: input.config.enabledMethods.map((method) => method.integrationId), expiresAt }
       });

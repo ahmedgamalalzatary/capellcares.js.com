@@ -28,6 +28,8 @@ import type {
   UseCheckoutResult
 } from "../types/checkout-view.types";
 
+const ONLINE_PAYMENT_MINIMUM = 10;
+
 export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResult {
   const { lines, clear } = useCart();
   const { user, accessToken } = useAuth();
@@ -144,16 +146,18 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
   const promoApplied = cartPromo.applied;
   const appliedCode = promoApplied?.promo?.status === "applied" ? promoApplied.promo.code : null;
   const productsTotal = promoApplied ? promoApplied.productsTotal : subtotal;
-  // Promo codes are cash on delivery only until online payment carries the code.
-  const paymentMethod = appliedCode ? PAYMENT_METHODS.cod : form.paymentMethod;
+  const paymentMethod = form.paymentMethod;
   const quoteKey = JSON.stringify([items, paymentMethod, form.shippingCityId, form.shippingZoneId,
     form.shippingDistrictId, user?.id ?? null, accessToken, Math.round(productsTotal * 100), appliedCode]);
   const shippingQuote = quoted?.key === quoteKey && availability?.enabled ? quoted.value : null;
   const totalAmount = productsTotal + (shippingQuote?.shippingAmountCents ?? 0) / 100;
 
+  // Paymob takes no payment under EGP 10 (spec section 3.5): a cheaper, non-free total is cash on delivery.
+  const belowOnlineMinimum = productsTotal + (shippingQuote?.shippingAmountCents ?? 0) / 100 > 0 &&
+    productsTotal + (shippingQuote?.shippingAmountCents ?? 0) / 100 < ONLINE_PAYMENT_MINIMUM;
   useEffect(() => {
-    if (appliedCode && form.paymentMethod !== PAYMENT_METHODS.cod) setForm((state) => ({ ...state, paymentMethod: PAYMENT_METHODS.cod }));
-  }, [appliedCode, form.paymentMethod]);
+    if (belowOnlineMinimum && form.paymentMethod !== PAYMENT_METHODS.cod) setForm((state) => ({ ...state, paymentMethod: PAYMENT_METHODS.cod }));
+  }, [belowOnlineMinimum, form.paymentMethod]);
 
   // A saved code that no longer applies is removed at checkout, with the reason (spec section 3.1).
   useEffect(() => {
@@ -278,6 +282,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
               : code === "SHIPPING_ADDRESS_INVALID" ? dict.checkout.shippingAddressInvalid
                 : code === "SHIPPING_COD_LIMIT" ? dict.checkout.shippingCodLimit
                   : code === "PAYMENT_UNAVAILABLE" ? dict.checkout.paymentUnavailable
+                  : code === "PAYMENT_MINIMUM" ? dict.promo.onlineMinimum
                   : error instanceof Error && error.message ? error.message : dict.checkout.checkoutFailed;
       setErrors((state) => ({
         ...state,
@@ -303,7 +308,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
     form,
     errors,
     placing,
-    paymobMethods: appliedCode ? [] : paymobMethods,
+    paymobMethods: belowOnlineMinimum ? [] : paymobMethods,
     promo: {
       savedCode: cartPromo.savedCode,
       saveCode: (code: string | null) => { setPromoNotice(null); cartPromo.saveCode(code); },
@@ -313,7 +318,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
       preview: cartPromo.preview,
       productsTotal,
       notice: promoNotice,
-      codOnly: Boolean(appliedCode) && paymobMethods.length > 0
+      onlineMinimum: belowOnlineMinimum && paymobMethods.length > 0
     },
     orderId,
     resolved,

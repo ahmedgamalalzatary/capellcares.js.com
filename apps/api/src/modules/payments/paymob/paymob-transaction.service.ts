@@ -7,6 +7,7 @@ import { checkoutShippingQuoteSchema } from "@capella/shared";
 import { enqueueOrderDelivery, blockRefundedDelivery } from "../../shipping/shipping-dispatch.repository.js";
 import { hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "../../checkout/financial-evidence.repository.js";
 import { notifyStaffOfNewOrder } from "../../orders/order-alert.js";
+import { convertPromoReservation, releasePromoReservation } from "../../promos/promo-checkout.js";
 
 type PaymobTransaction = Record<string, any> & {
   order?: { id?: unknown; merchant_order_id?: unknown };
@@ -234,6 +235,7 @@ async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransacti
             await tx.update(checkoutReservations).set({ state: "released" })
               .where(eq(checkoutReservations.id, reservation.id));
           }
+          await releasePromoReservation(tx, match.session.id, "payment_failed");
           await tx.update(checkoutSessions).set({ state: "expired" })
             .where(eq(checkoutSessions.id, match.session.id));
         }
@@ -298,7 +300,11 @@ async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransacti
       shippingSnapshot: match.session.shippingSnapshot,
       // D24: the paid order gets the same fixed 96-hour untouched deadline as COD, so the staff alert for an untouched paid order can actually be raised by the sweep.
       codExpiresAt: new Date(Date.now() + UNTOUCHED_EXPIRY_MS),
-      totalAmount: sql`${match.attempt.amountCents / 100}`
+      totalAmount: sql`${match.attempt.amountCents / 100}`,
+      promoCodeId: match.session.promoCodeId,
+      promoCodeText: match.session.promoCodeText,
+      promoSnapshot: match.session.promoSnapshot,
+      promoDiscountCents: match.session.promoDiscountCents
     }).$returningId();
     await tx.update(orders).set({ orderCode: generateOrderCode(order.id) }).where(eq(orders.id, order.id));
     await tx.insert(orderItems).values(snapshot.map((item) => ({
@@ -319,8 +325,12 @@ async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransacti
       snapshotDiscountType: item.snapshotDiscountType ?? null,
       snapshotDiscountValue: item.snapshotDiscountValue == null ? null : sql`${item.snapshotDiscountValue}`,
       snapshotDiscountStartsAt: item.snapshotDiscountStartsAt ? new Date(item.snapshotDiscountStartsAt) : null,
-      snapshotDiscountEndsAt: item.snapshotDiscountEndsAt ? new Date(item.snapshotDiscountEndsAt) : null
+      snapshotDiscountEndsAt: item.snapshotDiscountEndsAt ? new Date(item.snapshotDiscountEndsAt) : null,
+      promoDiscountAmount: item.promoDiscountAmount == null ? null : sql`${item.promoDiscountAmount}`,
+      promoReplacedDiscountId: item.promoReplacedDiscountId ?? null
     })));
+    // The webhook never re-checks the code: the session's held use simply becomes used (spec section 5.4).
+    await convertPromoReservation(tx, match.session.id, order.id);
     await tx.update(checkoutReservations).set({ state: "finalized" })
       .where(eq(checkoutReservations.checkoutSessionId, match.session.id));
     await tx.update(paymentAttempts).set({

@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.js";
-import { PaymobUnavailableError, submitCheckout } from "./checkout.service.js";
+import { PaymobMinimumError, PaymobUnavailableError, submitCheckout } from "./checkout.service.js";
 import { PaymobProviderError } from "../payments/paymob/paymob-client.js";
 import { CheckoutAmountChangedError } from "../orders/orders.service.js";
 import { CheckoutShippingError } from "../shipping/checkout-shipping.service.js";
@@ -27,6 +27,10 @@ export function checkoutController(req: AuthenticatedRequest, res: Response) {
       }
       if (error instanceof CheckoutShippingError) {
         res.status(error.status).json({ code: error.code, message: error.message });
+        return;
+      }
+      if (error instanceof PaymobMinimumError) {
+        res.status(400).json({ code: "PAYMENT_MINIMUM", message: error.message });
         return;
       }
       if (error instanceof PaymobUnavailableError) {

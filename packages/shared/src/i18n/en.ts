@@ -247,7 +247,7 @@ export const en = {
     login: "Log in",
     noLongerValid: "Code {code} no longer applies: {reason}",
     removedAtCheckout: "Code {code} was removed: {reason}",
-    codOnly: "Online payment isn't available with a promo code yet. Your order will be cash on delivery.",
+    onlineMinimum: "Online payment needs a total of at least EGP 10, so this order will be cash on delivery.",
     confirmTitle: "Replace sale prices?",
     confirmBody: "This code is calculated from the original price, so it removes the sale on these items:",
     confirmLine: "{name}: {from} → {to}",
