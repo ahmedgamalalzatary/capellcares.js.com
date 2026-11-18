@@ -18,7 +18,7 @@ vi.mock("@/lib/api/client", () => ({
 vi.mock("@/lib/paymob-browser-session", () => ({ getCheckoutIdempotencyKey: async () => "promo-request",
   clearPendingCheckout: vi.fn(), rememberPendingCheckout: vi.fn(), redirectToPaymob: vi.fn() }));
 import { useCheckout } from "@/hooks/use-checkout";
-import { loadPromoCode, savePromoCode } from "@/lib/promo/promo-code";
+import { loadPromoCode, salesSignature, savePromoCode } from "@/lib/promo/promo-code";
 
 const address = { cityId: "cairo", zoneId: "nasr", districtId: "district-1", cityName: { en: "Cairo", ar: "القاهرة" },
   zoneName: { en: "Nasr City", ar: "مدينة نصر" }, districtName: { en: "District 1", ar: "الحي الأول" } };
@@ -133,4 +133,78 @@ it("keeps online payment chosen while its delivery quote loads when the full tot
   await waitFor(() => expect(result.current.shipping.quote?.quoteId).toBe("quote_paymob"));
   expect(result.current.form.paymentMethod).toBe("paymob");
   expect(result.current.paymobMethods).toEqual(["card"]);
+});
+
+const replacing = { items: [{ index: 0, unitPrice: 120, originalUnitPrice: 120, lineTotal: 108, promoDiscount: 12 }], productsTotal: 108,
+  promo: { status: "applied", code: "SAVE10", arName: "خصم", enName: "Save", discount: 12, saleGivenUp: 20, freeShipping: false,
+    replacedSales: [{ index: 0, nameAr: "سيروم", nameEn: "Serum", previousLineTotal: 100, lineTotal: 108 }] } };
+
+it("does not let a saved code replace a sale until the customer confirms those exact prices (after login or a re-price)", async () => {
+  state.price.mockResolvedValue(replacing);
+  const { result } = renderHook(() => useCheckout({ lang: "en", dict: getDict("en") }));
+  await waitFor(() => expect(result.current.promo.confirmation?.code).toBe("SAVE10"));
+  expect(result.current.promo.productsTotal).toBe(100);
+  await fill(result);
+  await act(async () => result.current.placeOrder());
+  expect(state.submit).not.toHaveBeenCalled();
+  expect(result.current.errors.submit).toBe("Confirm the new prices for your code first.");
+
+  await act(async () => result.current.promo.confirm());
+  await waitFor(() => expect(result.current.promo.productsTotal).toBe(108));
+  expect(result.current.promo.confirmation).toBeNull();
+});
+
+it("uses a code without asking again when the customer already accepted these exact prices", async () => {
+  state.price.mockResolvedValue(replacing);
+  savePromoCode("save10", salesSignature(replacing.promo.replacedSales));
+  const { result } = renderHook(() => useCheckout({ lang: "en", dict: getDict("en") }));
+  await waitFor(() => expect(result.current.promo.productsTotal).toBe(108));
+  expect(result.current.promo.confirmation).toBeNull();
+});
+
+it("dropping the code from the confirmation keeps the sale prices", async () => {
+  state.price.mockResolvedValue(replacing);
+  const { result } = renderHook(() => useCheckout({ lang: "en", dict: getDict("en") }));
+  await waitFor(() => expect(result.current.promo.confirmation).not.toBeNull());
+  await act(async () => result.current.promo.decline());
+  expect(loadPromoCode()).toBe("");
+});
+
+it("checks the code against the checkout phone once a valid one is typed, so a used phone is caught before placing the order", async () => {
+  const { result } = renderHook(() => useCheckout({ lang: "en", dict: getDict("en") }));
+  await waitFor(() => expect(result.current.promo.productsTotal).toBe(90));
+  expect(state.price).not.toHaveBeenCalledWith(expect.objectContaining({ phone: expect.anything() }), expect.anything());
+  await fill(result);
+  await waitFor(() => expect(state.price).toHaveBeenLastCalledWith(expect.objectContaining({ promoCode: "save10", phone: "01012345678" }), "token"));
+  await waitFor(() => expect(state.quote).toHaveBeenLastCalledWith(expect.objectContaining({ phone: "01012345678" }), "token", true));
+});
+
+it("shows each line at the price the server charges with the code", async () => {
+  const { result } = renderHook(() => useCheckout({ lang: "en", dict: getDict("en") }));
+  await waitFor(() => expect(result.current.resolved[0]?.lineTotal).toBe(90));
+  expect(result.current.resolved[0]?.unit).toBe(100);
+});
+
+it("re-checks the code when the delivery quote says it no longer applies, so the customer sees why it was removed", async () => {
+  // The code runs out between pricing and the delivery quote: only the quote knows.
+  state.quote.mockImplementation(async () => {
+    state.price.mockResolvedValue({ items: [], productsTotal: 100, promo: { status: "rejected", code: "SAVE10", reason: "usage_limit" } });
+    throw Object.assign(new Error("Promo code rejected"), { code: "PROMO_REJECTED",
+      body: { code: "PROMO_REJECTED", promo: { status: "rejected", code: "SAVE10", reason: "usage_limit" } } });
+  });
+  const { result } = renderHook(() => useCheckout({ lang: "en", dict: getDict("en") }));
+  await waitFor(() => expect(result.current.promo.productsTotal).toBe(90));
+  await fill(result);
+  await waitFor(() => expect(result.current.promo.notice).toBe("Code SAVE10 was removed: This code has reached its usage limit."));
+  expect(loadPromoCode()).toBe("");
+});
+
+it("keeps the code and its saving for the order confirmation", async () => {
+  const { result } = renderHook(() => useCheckout({ lang: "en", dict: getDict("en") }));
+  await waitFor(() => expect(result.current.promo.productsTotal).toBe(90));
+  await fill(result);
+  await waitFor(() => expect(result.current.shipping.quote?.quoteId).toBe("quote_promo"));
+  await act(async () => result.current.placeOrder());
+  expect(result.current.orderId).toBe("ABCD-001");
+  expect(result.current.placedPromo).toMatchObject({ code: "SAVE10", discount: 10 });
 });

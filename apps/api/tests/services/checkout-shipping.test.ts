@@ -165,3 +165,12 @@ test("checkout without an active shipping service keeps its legacy behaviour", a
   const created = await createOrderFromCheckout(legacy, { idempotencyKey: crypto.randomUUID() });
   assert.ok(created.id, "legacy checkout stays available when shipping is inactive");
 });
+
+test("a delivery quote is bound to the promo code it was priced with, even when another code gives the same prices", async () => {
+  const { service, payload, priced } = await setup();
+  const withCode = (codeId: number) => ({ ...priced, promo: { dto: {} as never, application: { codeId } as never } });
+  const quote = await service.quoteCheckout(payload, withCode(1));
+  assert.equal((await service.resolve({ ...payload, shippingQuoteId: quote.quoteId }, withCode(1))).shippingAmountCents, 9729);
+  await assert.rejects(service.resolve({ ...payload, shippingQuoteId: quote.quoteId }, withCode(2)), { code: "SHIPPING_QUOTE_CHANGED" });
+  await assert.rejects(service.resolve({ ...payload, shippingQuoteId: quote.quoteId }, priced), { code: "SHIPPING_QUOTE_CHANGED" });
+});

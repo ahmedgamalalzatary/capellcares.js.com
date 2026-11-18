@@ -36,7 +36,7 @@ interface ReservedCheckoutInput {
 
 export async function createReservedCheckout(input: ReservedCheckoutInput) {
   return db.transaction(async (tx) => {
-    if (input.promo) await lockAndRecheckPromo(tx, input.promo);
+    if (input.promo) await lockAndRecheckPromo(tx, input.promo, new Date(), input.idempotencyKey);
     const [session] = await tx.insert(checkoutSessions).values({
       publicId: input.publicId,
       idempotencyKey: input.idempotencyKey,

@@ -35,7 +35,7 @@ export class CheckoutShippingError extends Error {
 
 type QuoteRequest = Pick<CheckoutRequestDto, "items" | "paymentMethod" | "shippingAddress" | "customerId">
   & Partial<Pick<CheckoutRequestDto, "addressLine" | "buildingApartment">>;
-type PricedCheckout = { items: unknown[]; totalAmount: number };
+type PricedCheckout = { items: unknown[]; totalAmount: number; promo?: { application: { codeId: number } | null } | null };
 export type CheckoutShippingProvider = {
   codPricingPolicy: "collection_total";
   listDestinations(): Promise<ShippingDestination[]>;
@@ -45,7 +45,9 @@ export type CheckoutShippingProvider = {
 function fingerprint(payload: QuoteRequest, priced: PricedCheckout): string {
   return createHash("sha256").update(JSON.stringify([
     payload.customerId ?? null, payload.items, payload.paymentMethod,
-    shippingAddressSchema.parse(payload.shippingAddress), priced.items, Math.round(priced.totalAmount * 100)
+    shippingAddressSchema.parse(payload.shippingAddress), priced.items, Math.round(priced.totalAmount * 100),
+    // The code itself, not only its effect: two codes with the same prices are still different agreements (spec section 7, case 34).
+    priced.promo?.application?.codeId ?? null
   ])).digest("hex");
 }
 

@@ -254,6 +254,10 @@ export const en = {
     confirmLine: "{name}: {from} → {to}",
     confirmApply: "Apply code",
     confirmCancel: "Keep current prices",
+    confirmChanged: "Prices changed since you applied this code. It now replaces the sale on these items:",
+    confirmNeeded: "Confirm the new prices for your code first.",
+    saleGivenUpLine: "Sale prices replaced by the code",
+    placedSaving: "Code {code} saved you {amount}",
     reasons: {
       login_required: "Log in to use promo codes.",
       not_found: "This code doesn't exist.",

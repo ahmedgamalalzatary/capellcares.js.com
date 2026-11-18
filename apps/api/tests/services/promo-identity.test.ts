@@ -84,3 +84,28 @@ test("released uses do not count toward limits, so a cancelled order frees a fir
   await db.insert(promoRedemptions).values({ promoCodeId: codeId, customerId, phoneNormalized: "+201012345678", state: "released", releaseReason: "cancelled" });
   assert.equal(await reason(await checkout(customerId, "01012345678")), "applied");
 });
+
+test("first order is one per customer across every first-order code: a use held by an open online payment blocks another first-order code", async () => {
+  const fresh = await newCustomer("two-codes@capella.test");
+  const welcomeA = await code({ code: "WELCOMEA", firstOrderOnly: true });
+  await code({ code: "WELCOMEB", firstOrderOnly: true });
+  // Code A is held by an online checkout that has not been paid yet, so no order exists.
+  await db.insert(promoRedemptions).values({ promoCodeId: welcomeA, customerId: fresh, phoneNormalized: "+201033334444", state: "reserved", discountCents: 100 });
+  assert.equal(await reason(await checkout(fresh, "01033334444", "WELCOMEB")), "in_use");
+  await db.update(promoRedemptions).set({ state: "used" });
+  assert.equal(await reason(await checkout(fresh, "01033334444", "WELCOMEB")), "first_order");
+});
+
+test("two first-order codes submitted at the same moment by one customer give only one first-order discount", async () => {
+  const fresh = await newCustomer("race@capella.test");
+  await code({ code: "WELCOMEA", firstOrderOnly: true });
+  await code({ code: "WELCOMEB", firstOrderOnly: true });
+  const results = await Promise.allSettled([
+    createOrderFromCheckout(await checkout(fresh, "01055556666", "WELCOMEA"), { idempotencyKey: crypto.randomUUID() }),
+    createOrderFromCheckout({ ...await checkout(fresh, "01055556666", "WELCOMEB"), email: "other-tab@capella.test" }, { idempotencyKey: crypto.randomUUID() })
+  ]);
+  assert.equal(results.filter((result) => result.status === "fulfilled").length, 1, JSON.stringify(results.map((result) => result.status)));
+  const refused = results.find((result) => result.status === "rejected") as PromiseRejectedResult;
+  assert.ok(refused.reason instanceof PromoRejectedError, String(refused.reason));
+  assert.equal((await db.select().from(promoRedemptions)).length, 1);
+});

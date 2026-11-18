@@ -12,7 +12,7 @@ import { CollectionIllustration } from "@/components/ui/collection-illustration"
 import { Icon } from "@/components/ui/icons";
 import { PromoCodeBox } from "@/components/checkout/promo-code-box";
 import { useCartPromo } from "@/hooks/use-cart-promo";
-import { fillTemplate } from "@/lib/promo/promo-code";
+import { PromoSavingsRows } from "@/components/checkout/promo-savings-rows";
 
 interface Resolved {
   key: string;
@@ -21,6 +21,8 @@ interface Resolved {
   /** Localized category name when the line's category resolves. */
   category?: string;
   unitPrice: number;
+  /** Position of the line in the cart, matching the server's priced items. */
+  index: number;
   qty: number;
   slug: string;
   type: "product" | "offer" | "collection";
@@ -65,7 +67,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
 
   const resolved: Resolved[] = useMemo(() => {
     return lines
-      .map((l) => {
+      .map((l, index) => {
         const key = keyOf(l);
         if (l.type === "product") {
           const p = products.find((p) => p.id === l.productId);
@@ -81,6 +83,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
             category: category ? pickLang(category.name, lang) : undefined,
             unitPrice: getEffectiveVariantPrice(v),
             qty: l.qty,
+            index,
             slug: `/${lang}/products/${p.slug}`,
             entityId: p.id,
             illustration: <ProductIllustration product={p} lang={lang} className="h-full w-full object-cover" />
@@ -100,6 +103,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
             category: category ? pickLang(category.name, lang) : undefined,
             unitPrice: o.price,
             qty: l.qty,
+            index,
             slug: `/${lang}/offers/${o.slug}`,
             entityId: o.id,
             illustration: <OfferIllustration offer={o} lang={lang} className="h-full w-full object-cover" />
@@ -118,6 +122,7 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           category: category ? pickLang(category.name, lang) : undefined,
           unitPrice: collection.price,
           qty: l.qty,
+          index,
           slug: `/${lang}/collections/${collection.slug}`,
           entityId: collection.id,
           illustration: (
@@ -131,8 +136,10 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
   const subtotal = resolved.reduce((acc, r) => acc + r.unitPrice * r.qty, 0);
   const totalUnits = resolved.reduce((acc, r) => acc + r.qty, 0);
   // With a promo code applied, the server's total is the one the customer will pay (spec section 5.1).
-  const appliedCode = cartPromo.applied?.promo?.status === "applied" ? cartPromo.applied.promo.code : null;
+  const appliedPromo = cartPromo.applied?.promo?.status === "applied" ? cartPromo.applied.promo : null;
   const productsTotal = cartPromo.applied ? cartPromo.applied.productsTotal : subtotal;
+  // What each line costs with the code, from the server (absent without a code).
+  const paidTotal = (index: number) => cartPromo.applied?.items.find((line) => line.index === index)?.lineTotal;
 
   // The cart has lines but the catalog hasn't resolved yet (or the resolve fetch failed): show a loading state, never the "empty" screen — collapsing this into the empty case is what let a slow/failed fetch blank a real cart.
   if (resolved.length === 0 && lines.length > 0 && !catalogLoaded) {
@@ -214,8 +221,11 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
                     </div>
 
                     <div className="ms-auto shrink-0 text-end">
+                      {paidTotal(r.index) !== undefined && Math.abs(paidTotal(r.index)! - r.unitPrice * r.qty) >= 0.005 ? (
+                        <del className="block text-sm text-(--ink-3)">{formatPrice(r.unitPrice * r.qty, lang)}</del>
+                      ) : null}
                       <div className="text-base font-semibold text-ink sm:text-lg">
-                        {formatPrice(r.unitPrice * r.qty, lang)}
+                        {formatPrice(paidTotal(r.index) ?? r.unitPrice * r.qty, lang)}
                       </div>
                     </div>
                   </div>
@@ -264,16 +274,8 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
           {dict.cart.summaryTitle}
         </div>
         <div className="my-5 h-px bg-(--hairline)" />
-        <div className="flex items-center justify-between py-1.5 text-sm">
-          <span className="text-(--ink-2)">{dict.common.subtotal}</span>
-          <span className="text-ink">{formatPrice(subtotal, lang)}</span>
-        </div>
-        {appliedCode ? (
-          <div className="flex items-center justify-between py-1.5 text-sm">
-            <span className="text-(--ink-2)">{fillTemplate(dict.promo.discountLine, { code: appliedCode })}</span>
-            <span className="text-(--success)">{formatPrice(productsTotal - subtotal, lang)}</span>
-          </div>
-        ) : null}
+        <PromoSavingsRows lang={lang} dict={dict} subtotal={subtotal} productsTotal={productsTotal} applied={appliedPromo}
+          rowClassName="flex items-center justify-between py-1.5 text-sm" />
         <div className="flex items-center justify-between py-1.5 text-sm">
           <span className="text-(--ink-2)">{dict.common.shipping}</span>
           <span className="text-sm text-(--ink-3)">{dict.common.calculatedAtCheckout}</span>
@@ -288,7 +290,8 @@ export function CartView({ lang, dict }: { lang: Language; dict: any }) {
         </div>
         <div className="mt-4">
           <PromoCodeBox lang={lang} dict={dict} signedIn={cartPromo.signedIn} loginHref={cartPromo.loginHref} savedCode={cartPromo.savedCode}
-            promo={cartPromo.priced?.promo ?? null} preview={cartPromo.preview} onSave={cartPromo.saveCode} />
+            promo={cartPromo.priced?.promo ?? null} preview={cartPromo.preview} onSave={cartPromo.saveCode}
+            confirmation={cartPromo.confirmation} onConfirm={cartPromo.confirm} onDecline={cartPromo.decline} />
         </div>
         <Link href={`/${lang}/checkout`} className="btn btn--primary btn--block btn--lg mt-5">
           {dict.cart.proceed}

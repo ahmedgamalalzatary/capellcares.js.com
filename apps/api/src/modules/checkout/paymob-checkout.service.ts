@@ -3,14 +3,14 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { checkoutReservations, checkoutSessions, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
 import type { CheckoutPayload } from "../../types/domain.js";
-import { normalizeEgyptianPhone, type CheckoutShippingQuote } from "@capella/shared";
+import { normalizeEgyptianPhone, normalizePromoCode, type CheckoutShippingQuote } from "@capella/shared";
 import { createReservedCheckout } from "./checkout-reservation.repository.js";
 import { hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "./financial-evidence.repository.js";
 import { CheckoutAmountChangedError, priceCheckout, requireAppliedPromo } from "../orders/orders.service.js";
 import { releasePromoReservation } from "../promos/promo-checkout.js";
 import { resolveShippingForCheckout } from "../shipping/checkout-shipping-runtime.js";
 import type { CheckoutShippingService } from "../shipping/checkout-shipping.service.js";
-import type { PaymobConfig } from "../payments/paymob/paymob-config.js";
+import { resolvePaymobConfig, type PaymobConfig } from "../payments/paymob/paymob-config.js";
 import {
   createPaymobIntention,
   PaymobProviderError,
@@ -130,6 +130,10 @@ export async function initiatePaymobCheckout(input: {
   if (!input.config.canInitiatePayments || !input.config.secretKey || !input.config.publicKey) {
     throw new Error("Paymob checkout is not configured");
   }
+  // A repeat of a checkout that is still payable gets its payment link back before anything is re-priced, so a code paused
+  // or used up since then cannot refuse the customer's own open payment.
+  const replay = await replayPaymobCheckout(input.payload, input.idempotencyKey, input.config, input.now);
+  if (replay) return replay;
   // A caller that already priced and quoted (e.g. submitCheckout) passes the validated context so it is never recomputed. Absent context, resolve it exactly as before.
   const priced = input.priced ?? await priceCheckout(input.payload, { idempotencyKey: input.idempotencyKey });
   const promo = requireAppliedPromo(priced);
@@ -170,7 +174,9 @@ export async function initiatePaymobCheckout(input: {
       session.governorate !== (shipping?.address.cityName.en ?? input.payload.governorate) ||
       session.cityArea !== (shipping ? `${shipping.address.zoneName.en} / ${shipping.address.districtName.en}`.slice(0, 120) : input.payload.cityArea) ||
       session.addressLine !== input.payload.addressLine || session.buildingApartment !== input.payload.buildingApartment ||
-      (session.notes ?? "") !== (input.payload.notes ?? "") || session.shippingSnapshot !== shippingSnapshot) {
+      (session.notes ?? "") !== (input.payload.notes ?? "") || session.shippingSnapshot !== shippingSnapshot ||
+      // The code itself, not only its effect: the same key with another code is another checkout (spec section 7, case 34).
+      (session.promoCodeId ?? null) !== (promo?.codeId ?? null)) {
       throw new Error("Idempotency key belongs to a different checkout");
     }
     if (existing.clientSecret) {
@@ -452,4 +458,45 @@ export async function retryPaymobCheckout(input: {
   if (!stillPayable) throw new Error("Checkout is no longer payable");
   return { kind: "paymob_redirect" as const, checkoutId: input.checkoutId,
     checkoutUrl: intention.checkoutUrl, expiresAt: allocated.session.reservationExpiresAt.toISOString() };
+}
+
+type ReplayPayload = Parameters<typeof initiatePaymobCheckout>[0]["payload"];
+
+/** The payment link of a still-payable checkout made earlier with this idempotency key, when the request is that same checkout:
+ * same customer, contact, address and delivery quote, same items and the same code. Null otherwise (the full path then decides). */
+export async function replayPaymobCheckout(payload: ReplayPayload, idempotencyKey: string, config: PaymobConfig = resolvePaymobConfig(), now = new Date()) {
+  if (!config.canInitiatePayments || !config.publicKey) return null;
+  const [row] = await db.select({ session: checkoutSessions, clientSecret: paymentAttempts.clientSecret }).from(checkoutSessions)
+    .innerJoin(paymentAttempts, eq(paymentAttempts.checkoutSessionId, checkoutSessions.id))
+    .where(eq(checkoutSessions.idempotencyKey, idempotencyKey))
+    .orderBy(desc(paymentAttempts.attemptNumber)).limit(1);
+  if (!row?.clientSecret) return null;
+  const session = row.session;
+  if (session.state !== "payment_pending" || session.reservationExpiresAt <= now) return null;
+
+  const shipping = session.shippingSnapshot ? JSON.parse(session.shippingSnapshot) as { quoteId?: string; address?: { cityId: string; zoneId: string; districtId: string } } : null;
+  const sameDestination = shipping
+    ? shipping.quoteId === payload.shippingQuoteId && shipping.address?.cityId === payload.shippingAddress?.cityId &&
+      shipping.address?.zoneId === payload.shippingAddress?.zoneId && shipping.address?.districtId === payload.shippingAddress?.districtId
+    : !payload.shippingQuoteId && session.governorate === payload.governorate && session.cityArea === payload.cityArea;
+  const snapshot = JSON.parse(session.cartSnapshot) as Array<{ itemType: string; variantId?: number | null; offerId?: number | null; collectionId?: number | null; qty: number }>;
+  const sameItems = Array.isArray(snapshot) && snapshot.length === payload.items.length && payload.items.every((item, index) => {
+    const line = snapshot[index]!;
+    if (line.qty !== item.qty) return false;
+    if (item.type === "product") return line.itemType === "product_variant" && line.variantId === item.variantId;
+    if (item.type === "offer") return line.itemType === "offer" && line.offerId === item.offerId;
+    return line.itemType === "collection" && line.collectionId === item.collectionId;
+  });
+  const sameCode = normalizePromoCode(session.promoCodeText ?? "") === normalizePromoCode(payload.promoCode ?? "");
+  const sameCustomer = session.customerId === (payload.customerId ?? null) && session.fullName === payload.fullName &&
+    session.phone === normalizeEgyptianPhone(payload.phone) && session.email === payload.email &&
+    session.addressLine === payload.addressLine && session.buildingApartment === payload.buildingApartment &&
+    (session.notes ?? "") === (payload.notes ?? "");
+  if (!sameDestination || !sameItems || !sameCode || !sameCustomer) return null;
+  return {
+    kind: "paymob_redirect" as const,
+    checkoutId: session.publicId,
+    checkoutUrl: `https://eg.checkout.paymob.com/?publicKey=${encodeURIComponent(config.publicKey)}&clientSecret=${encodeURIComponent(row.clientSecret)}`,
+    expiresAt: session.reservationExpiresAt.toISOString()
+  };
 }

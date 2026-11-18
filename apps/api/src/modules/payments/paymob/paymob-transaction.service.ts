@@ -1,4 +1,4 @@
-import { and, eq, lt, sql } from "drizzle-orm";
+import { and, eq, inArray, lt, sql } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import { db } from "@capella/database/src/db";
 import { carts, checkoutReservations, checkoutSessions, orderItems, orders, paymentAttempts, paymentWebhookEvents, paymobCallbackInbox, productVariants } from "@capella/database/drizzle/schema";
@@ -7,7 +7,7 @@ import { checkoutShippingQuoteSchema } from "@capella/shared";
 import { enqueueOrderDelivery, blockRefundedDelivery } from "../../shipping/shipping-dispatch.repository.js";
 import { hasUnresolvedFinancialEvidence, sessionPaymobOrderIds, unresolvedInboxOrderIds } from "../../checkout/financial-evidence.repository.js";
 import { notifyStaffOfNewOrder } from "../../orders/order-alert.js";
-import { convertPromoReservation, releasePromoReservation } from "../../promos/promo-checkout.js";
+import { convertPromoReservation, releasePromoUse, releasePromoReservation } from "../../promos/promo-checkout.js";
 
 type PaymobTransaction = Record<string, any> & {
   order?: { id?: unknown; merchant_order_id?: unknown };
@@ -254,7 +254,12 @@ async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransacti
         eq(checkoutReservations.checkoutSessionId, match.session.id),
         eq(checkoutReservations.state, "reserved")
       )).for("update");
-    if (reservations.length === 0) {
+    // A payment that lands after its checkout expired is still honored when the stock it held is free again (spec section 3.6):
+    // the customer paid, so they get the order. Otherwise it waits for staff to refund, as before; once parked for staff it
+    // stays with them, since they may already have refunded it.
+    if (reservations.length === 0 && (match.attempt.earlyRefundAmountCents > 0 || match.session.state !== "expired" ||
+      match.attempt.status === "reconciliation_required" ||
+      !await retakeReleasedStock(tx, match.session.id))) {
       await tx.update(paymentAttempts).set({
         status: "reconciliation_required",
         paymobTransactionId: String(transaction.id),
@@ -331,6 +336,8 @@ async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransacti
     })));
     // The webhook never re-checks the code: the session's held use simply becomes used (spec section 5.4).
     await convertPromoReservation(tx, match.session.id, order.id);
+    // Paymob refunded the whole amount before this success arrived: the order is kept for the record, the code use goes back.
+    if (match.attempt.earlyRefundAmountCents === match.attempt.amountCents) await releasePromoUse(tx, order.id, "early_refund");
     await tx.update(checkoutReservations).set({ state: "finalized" })
       .where(eq(checkoutReservations.checkoutSessionId, match.session.id));
     await tx.update(paymentAttempts).set({
@@ -348,4 +355,25 @@ async function applyPaymobTransaction(tx: PaymobTx, transaction: PaymobTransacti
     }
     return { outcome: "succeeded" as const, orderId: order.id, paymentAttemptId: match.attempt.id, checkoutSessionId: match.session.id };
   }
+}
+
+/** Takes back the stock an expired checkout had released, all or nothing; false when any of it has been sold since. */
+async function retakeReleasedStock(tx: PaymobTx, checkoutSessionId: number): Promise<boolean> {
+  const released = await tx.select().from(checkoutReservations)
+    .where(and(eq(checkoutReservations.checkoutSessionId, checkoutSessionId), eq(checkoutReservations.state, "released")))
+    .for("update");
+  if (released.length === 0) return false;
+  const needed = new Map<number, number>();
+  for (const row of released) needed.set(row.variantId, (needed.get(row.variantId) ?? 0) + row.qty);
+  const variantIds = [...needed.keys()].sort((a, b) => a - b);
+  const variants = await tx.select({ id: productVariants.id, stockQty: productVariants.stockQty }).from(productVariants)
+    .where(inArray(productVariants.id, variantIds)).orderBy(productVariants.id).for("update");
+  if (variants.length !== variantIds.length || variants.some((variant) => variant.stockQty < needed.get(variant.id)!)) return false;
+  for (const variantId of variantIds) {
+    await tx.update(productVariants).set({ stockQty: sql`${productVariants.stockQty} - ${needed.get(variantId)!}` })
+      .where(eq(productVariants.id, variantId));
+  }
+  await tx.update(checkoutReservations).set({ state: "reserved" })
+    .where(and(eq(checkoutReservations.checkoutSessionId, checkoutSessionId), eq(checkoutReservations.state, "released")));
+  return true;
 }

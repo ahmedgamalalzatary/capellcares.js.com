@@ -17,11 +17,12 @@ const checkoutStatusLimit = rateLimit({ keyPrefix: "checkout-status", windowMs: 
 const checkoutRetryLimit = rateLimit({ keyPrefix: "checkout-retry", windowMs: 10 * 60 * 1000, max: 10,
   key: (req) => `${req.ip ?? "unknown"}:${req.params.checkoutId ?? "unknown"}` });
 
-checkoutRoutes.post("/", checkoutLimit, optionalAuthMiddleware, validateBody(parseCheckoutBody), checkoutController);
+// Every request that checks a typed code shares one guessing limit (spec section 9.4).
+checkoutRoutes.post("/", checkoutLimit, optionalAuthMiddleware, limitPromoAttempts, validateBody(parseCheckoutBody), checkoutController);
 const shippingQuoteLimit = rateLimit({ keyPrefix: "shipping-quote", windowMs: 60 * 1000, max: 30 });
 const priceLimit = rateLimit({ keyPrefix: "checkout-price", windowMs: 60 * 1000, max: 60 });
 checkoutRoutes.post("/price", priceLimit, optionalAuthMiddleware, limitPromoAttempts, wrapAsync(checkoutPriceController));
 checkoutRoutes.get("/shipping", shippingQuoteLimit, wrapAsync(checkoutShippingAvailabilityController));
-checkoutRoutes.post("/shipping/quote", shippingQuoteLimit, optionalAuthMiddleware, wrapAsync(checkoutShippingQuoteController));
+checkoutRoutes.post("/shipping/quote", shippingQuoteLimit, optionalAuthMiddleware, limitPromoAttempts, wrapAsync(checkoutShippingQuoteController));
 checkoutRoutes.get("/:checkoutId/status", checkoutStatusLimit, wrapAsync(getCheckoutStatusController));
 checkoutRoutes.post("/:checkoutId/retry", checkoutRetryLimit, wrapAsync(retryCheckoutController));

@@ -3,7 +3,7 @@
 // that runs inside the transaction creating the order, under a row lock on the code, so a limited code can never be
 // used more times than allowed however many customers submit at once.
 import { and, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
-import { categories, checkoutSessions, orders, promoCodeCustomers, promoCodes, promoCodeTargets, promoRedemptions } from "@capella/database/drizzle/schema";
+import { categories, checkoutSessions, customers, orders, promoCodeCustomers, promoCodes, promoCodeTargets, promoRedemptions } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 import { normalizeEgyptianPhone, normalizePromoCode, type PromoAppliedDto, type PromoRejectionDto } from "@capella/shared";
 import {
@@ -88,6 +88,16 @@ async function usageCounts(executor: Executor, codeId: number, customerId: numbe
   };
 }
 
+/** Live uses of any first-order code by this account or phone: a first-order discount is one per customer, whichever code gave it. */
+async function firstOrderUses(executor: Executor, customerId: number, phone: string | null, ignoreSessionId: number | null) {
+  const mine = phone ? or(eq(promoRedemptions.customerId, customerId), eq(promoRedemptions.phoneNormalized, phone)) : eq(promoRedemptions.customerId, customerId);
+  const [row] = await executor.select({ live: sql<number>`count(*)`, reserved: sql<number>`sum(${promoRedemptions.state} = 'reserved')` })
+    .from(promoRedemptions).innerJoin(promoCodes, eq(promoCodes.id, promoRedemptions.promoCodeId))
+    .where(and(eq(promoCodes.firstOrderOnly, true), inArray(promoRedemptions.state, ["reserved", "used"]), mine,
+      ignoreSessionId === null ? undefined : or(isNull(promoRedemptions.checkoutSessionId), ne(promoRedemptions.checkoutSessionId, ignoreSessionId))));
+  return { live: Number(row?.live ?? 0), reserved: Number(row?.reserved ?? 0) };
+}
+
 /** Any earlier order by this account or this checkout phone, whatever happened to it (cancelled, denied and expired count). */
 async function hasPreviousOrder(executor: Executor, customerId: number, phone: string | null) {
   const match = phone ? or(eq(orders.customerId, customerId), eq(orders.phone, phone)) : eq(orders.customerId, customerId);
@@ -103,19 +113,21 @@ async function isOnPrivateList(executor: Executor, codeId: number, customerId: n
 
 async function accessFailure(executor: Executor, code: PromoCodeRow | null, customerId: number | null, phone: string | null, now: Date, ignoreSessionId: number | null = null) {
   if (customerId === null || !code) return validatePromoAccess(code, { customerId, now, onPrivateList: false, hasPreviousOrder: false, usedTotal: 0, usedByCustomer: 0 });
-  const [counts, previous, listed] = await Promise.all([
+  const [counts, previous, listed, firstOrder] = await Promise.all([
     usageCounts(executor, code.id, customerId, phone, ignoreSessionId),
     code.firstOrderOnly ? hasPreviousOrder(executor, customerId, phone) : Promise.resolve(false),
-    code.isPrivate ? isOnPrivateList(executor, code.id, customerId) : Promise.resolve(false)
+    code.isPrivate ? isOnPrivateList(executor, code.id, customerId) : Promise.resolve(false),
+    code.firstOrderOnly ? firstOrderUses(executor, customerId, phone, ignoreSessionId) : Promise.resolve({ live: 0, reserved: 0 })
   ]);
   const failure = validatePromoAccess(code, { customerId, now, onPrivateList: listed, hasPreviousOrder: previous,
     usedTotal: counts.usedTotal, usedByCustomer: counts.usedByCustomer });
   // A limit reached only because another checkout is paying online right now is "in use", not "used up" (spec section 6.2).
   if (failure === "usage_limit" && counts.usedTotal - counts.reservedTotal < code.totalUsageLimit!) return "in_use";
   if (failure === "customer_limit" && counts.usedByCustomer - counts.reservedByCustomer < code.perCustomerLimit!) return "in_use";
-  // A first-order code is one use per customer even before that use becomes an order (two open online checkouts).
-  if (!failure && code.firstOrderOnly && counts.usedByCustomer > 0) {
-    return counts.usedByCustomer > counts.reservedByCustomer ? "first_order" : "in_use";
+  // A first-order discount is one per customer, across every first-order code, even before that use becomes an order
+  // (an online checkout still being paid).
+  if (!failure && code.firstOrderOnly && firstOrder.live > 0) {
+    return firstOrder.live > firstOrder.reserved ? "first_order" : "in_use";
   }
   return failure;
 }
@@ -234,10 +246,17 @@ export async function evaluateCheckoutPromo(input: {
   };
 }
 
-/** The binding check, inside the order transaction: locks the code row, then re-checks status, schedule, lists and limits with fresh counts. */
-export async function lockAndRecheckPromo(tx: Executor, application: PromoApplication, now = new Date()) {
+/** The binding check, inside the order transaction: locks the code row, then re-checks status, schedule, lists and limits with fresh counts.
+ * `idempotencyKey`: an online checkout repeated with the same key does not count the use its twin session already holds, so the
+ * repeat reaches the duplicate-key recovery and gets the twin's payment link instead of "in use". */
+export async function lockAndRecheckPromo(tx: Executor, application: PromoApplication, now = new Date(), idempotencyKey?: string) {
   const [code] = await tx.select().from(promoCodes).where(eq(promoCodes.id, application.codeId)).limit(1).for("update");
-  const failure = await accessFailure(tx, code ?? null, application.customerId, application.phone, now);
+  // First-order is a rule about the customer, not the code: two different first-order codes must wait for each other.
+  if (code?.firstOrderOnly) await tx.select({ id: customers.id }).from(customers).where(eq(customers.id, application.customerId)).for("update");
+  const [twin] = idempotencyKey
+    ? await tx.select({ id: checkoutSessions.id }).from(checkoutSessions).where(eq(checkoutSessions.idempotencyKey, idempotencyKey)).limit(1)
+    : [];
+  const failure = await accessFailure(tx, code ?? null, application.customerId, application.phone, now, twin?.id ?? null);
   if (failure) throw new PromoRejectedError({ status: "rejected", code: application.codeText, reason: failure });
 }
 
@@ -281,7 +300,7 @@ export async function releasePromoReservation(tx: Executor, checkoutSessionId: n
 }
 
 /** Gives a used code back when its order is denied, expires or completes cancellation (spec section 6.1). Partial returns never call this. */
-export async function releasePromoUse(tx: Executor, orderId: number, reason: "cancelled" | "denied" | "expired") {
+export async function releasePromoUse(tx: Executor, orderId: number, reason: "cancelled" | "denied" | "expired" | "early_refund") {
   await tx.update(promoRedemptions).set({ state: "released", releaseReason: reason })
     .where(and(eq(promoRedemptions.orderId, orderId), eq(promoRedemptions.state, "used")));
 }

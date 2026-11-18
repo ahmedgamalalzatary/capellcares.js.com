@@ -137,6 +137,34 @@ describe("max discounted pieces", () => {
   });
 });
 
+describe("large carts", () => {
+  test("works per line, not per piece, so a huge quantity costs no more than a small one", () => {
+    // 5 billion pieces would not even fit in an array if every piece were its own object.
+    const started = Date.now();
+    const result = success(pricing(rules({ discountValue: 10, maxDiscountedPieces: 3 }), [variantLine({ original: 100, qty: 5_000_000_000 }), variantLine({ original: 200 })]));
+    assert.ok(Date.now() - started < 1000);
+    assert.deepEqual(result.lines.map((line) => line.discountedPieces), [2, 1]);
+    assert.equal(result.discountCents, 4000);
+  });
+});
+
+describe("rounding", () => {
+  test("a line that receives none of the discount keeps its sale", () => {
+    // EGP 0.01 goes whole to the dearer line; the cheaper line must not lose its sale for nothing.
+    const cheap = variantLine({ original: 10, sale: 5 });
+    const result = success(pricing(rules({ discountType: "fixed", discountValue: 0.01 }), [variantLine({ original: 100, sale: 50 }), cheap]));
+    const [, kept] = result.lines;
+    assert.equal(kept!.lineTotal, 5);
+    assert.equal(kept!.unitPrice, 5);
+    assert.equal(kept!.discountedPieces, 0);
+    assert.equal(kept!.saleGivenUp, 0);
+    assert.equal(kept!.replacedSaleDiscountId, null);
+    assert.deepEqual(result.replacedSales.map((sale) => sale.key), [result.lines[0]!.key]);
+    assert.equal(result.saleGivenUpCents, 5000);
+    assert.equal(result.lines.reduce((sum, line) => sum + Math.round(line.promoDiscount * 100), 0), result.discountCents);
+  });
+});
+
 describe("eligibility", () => {
   test("selected categories cover products in them (including sub-categories passed as lineage), not other products", () => {
     const code = rules({ eligibility: { scope: "selected", include: [{ type: "category", id: 5 }], exclude: [] } });

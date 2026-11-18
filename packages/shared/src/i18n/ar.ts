@@ -256,6 +256,10 @@ export const ar = {
     confirmLine: "{name}: {from} ← {to}",
     confirmApply: "تطبيق الكود",
     confirmCancel: "الإبقاء على الأسعار الحالية",
+    confirmChanged: "تغيّرت الأسعار منذ تطبيق الكود، وأصبح يلغي التخفيض على هذه المنتجات:",
+    confirmNeeded: "أكّدي الأسعار الجديدة للكود أولًا.",
+    saleGivenUpLine: "تخفيضات استبدلها الكود",
+    placedSaving: "وفّر لكِ الكود {code} مبلغ {amount}",
     reasons: {
       login_required: "سجّلي الدخول لاستخدام أكواد الخصم.",
       not_found: "هذا الكود غير موجود.",

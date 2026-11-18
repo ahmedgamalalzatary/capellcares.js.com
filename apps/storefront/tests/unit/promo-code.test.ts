@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getDict } from "@capella/shared";
-import { fillTemplate, loadPromoCode, promoRejectionMessage, savePromoCode } from "@/lib/promo/promo-code";
+import { acceptPromoSales, fillTemplate, loadAcceptedPromoSales, loadPromoCode, promoRejectionMessage, salesSignature, savePromoCode } from "@/lib/promo/promo-code";
 
 afterEach(() => {
   localStorage.clear();
@@ -43,5 +43,26 @@ describe("promoRejectionMessage", () => {
 describe("fillTemplate", () => {
   it("replaces every named placeholder", () => {
     expect(fillTemplate("{name}: {from} → {to}", { name: "Oil", from: "100", to: "90" })).toBe("Oil: 100 → 90");
+  });
+});
+
+describe("accepted sale replacements", () => {
+  const sales = [{ index: 1, nameAr: "ب", nameEn: "B", previousLineTotal: 5, lineTotal: 10 }, { index: 0, nameAr: "أ", nameEn: "A", previousLineTotal: 50, lineTotal: 90 }];
+
+  it("are bound to the exact lines and prices the customer saw, in any order", () => {
+    expect(salesSignature(sales)).toBe(salesSignature([...sales].reverse()));
+    expect(salesSignature(sales)).not.toBe(salesSignature([{ ...sales[0]!, lineTotal: 11 }, sales[1]!]));
+    expect(salesSignature([])).toBe("");
+  });
+
+  it("are kept with the code and forgotten when the code changes", () => {
+    savePromoCode("save10", salesSignature(sales));
+    expect(loadAcceptedPromoSales()).toBe(salesSignature(sales));
+    savePromoCode("other");
+    expect(loadAcceptedPromoSales()).toBe("");
+    acceptPromoSales("sig");
+    expect(loadAcceptedPromoSales()).toBe("sig");
+    savePromoCode(null);
+    expect(loadAcceptedPromoSales()).toBe("");
   });
 });

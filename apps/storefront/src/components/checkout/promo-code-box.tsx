@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { formatPrice, type CheckoutPriceResponseDto, type Dict, type Language, type PromoAppliedDto } from "@capella/shared";
-import { fillTemplate, promoRejectionMessage } from "@/lib/promo/promo-code";
+import { fillTemplate, promoRejectionMessage, salesSignature } from "@/lib/promo/promo-code";
 
 type Props = {
   lang: Language;
@@ -16,11 +16,16 @@ type Props = {
   promo: CheckoutPriceResponseDto["promo"];
   /** Prices the cart with a candidate code without saving it. */
   preview: (code: string) => Promise<CheckoutPriceResponseDto | null>;
-  onSave: (code: string | null) => void;
+  /** Saves a code, with the sale replacements the customer just accepted for it. */
+  onSave: (code: string | null, acceptedSales?: string) => void;
+  /** The saved code now replaces sales the customer has not accepted (after login, a cart change or a price change). */
+  confirmation?: PromoAppliedDto | null;
+  onConfirm?: () => void;
+  onDecline?: () => void;
 };
 
 /** Code box for cart and checkout (spec section 9.4): login prompt for guests, sale-replacement confirmation, a reason for every refusal. */
-export function PromoCodeBox({ lang, dict, signedIn, loginHref, savedCode, promo, preview, onSave }: Props) {
+export function PromoCodeBox({ lang, dict, signedIn, loginHref, savedCode, promo, preview, onSave, confirmation = null, onConfirm, onDecline }: Props) {
   const inputId = useId();
   const titleId = useId();
   const [text, setText] = useState("");
@@ -29,9 +34,12 @@ export function PromoCodeBox({ lang, dict, signedIn, loginHref, savedCode, promo
   const [pending, setPending] = useState<{ code: string; promo: PromoAppliedDto } | null>(null);
   const dialogRef = useRef<HTMLElement>(null);
 
+  // A code the customer is applying now comes first; otherwise a saved code whose replacements changed asks again.
+  const asking = pending ? { promo: pending.promo, again: false } : confirmation ? { promo: confirmation, again: true } : null;
+
   useEffect(() => {
-    if (pending) dialogRef.current?.focus();
-  }, [pending]);
+    if (asking) dialogRef.current?.focus();
+  }, [Boolean(asking)]); // eslint-disable-line react-hooks/exhaustive-deps -- focus when the dialog opens
 
   const apply = async () => {
     const code = text.trim();
@@ -66,10 +74,18 @@ export function PromoCodeBox({ lang, dict, signedIn, loginHref, savedCode, promo
   };
 
   const confirm = () => {
-    if (!pending) return;
-    onSave(pending.code);
+    if (!pending) {
+      onConfirm?.();
+      return;
+    }
+    onSave(pending.code, salesSignature(pending.promo.replacedSales));
     setPending(null);
     setText("");
+  };
+
+  const cancel = () => {
+    if (pending) setPending(null);
+    else onDecline?.();
   };
 
   const saved = savedCode.trim();
@@ -103,14 +119,14 @@ export function PromoCodeBox({ lang, dict, signedIn, loginHref, savedCode, promo
         </div>
       )}
 
-      {pending ? (
+      {asking ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
           <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}
             className="grid w-full max-w-md gap-4 rounded-(--radius-lg) border border-(--hairline) bg-canvas p-6 shadow-2xl">
             <h2 id={titleId} className="m-0 text-lg font-bold text-ink">{dict.promo.confirmTitle}</h2>
-            <p className="m-0 text-sm text-(--ink-2)">{dict.promo.confirmBody}</p>
+            <p className="m-0 text-sm text-(--ink-2)">{asking.again ? dict.promo.confirmChanged : dict.promo.confirmBody}</p>
             <ul className="m-0 grid list-none gap-1 p-0 text-sm text-ink">
-              {pending.promo.replacedSales.map((sale) => (
+              {asking.promo.replacedSales.map((sale) => (
                 <li key={sale.index}>{fillTemplate(dict.promo.confirmLine, {
                   name: lang === "ar" ? sale.nameAr : sale.nameEn,
                   from: formatPrice(sale.previousLineTotal, lang),
@@ -119,7 +135,7 @@ export function PromoCodeBox({ lang, dict, signedIn, loginHref, savedCode, promo
               ))}
             </ul>
             <div className="flex flex-wrap justify-end gap-2">
-              <button type="button" className="btn btn--ghost" onClick={() => setPending(null)}>{dict.promo.confirmCancel}</button>
+              <button type="button" className="btn btn--ghost" onClick={cancel}>{dict.promo.confirmCancel}</button>
               <button type="button" className="btn btn--primary" onClick={confirm}>{dict.promo.confirmApply}</button>
             </div>
           </section>

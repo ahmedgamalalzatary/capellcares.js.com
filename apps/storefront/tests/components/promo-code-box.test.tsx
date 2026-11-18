@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getDict, type CheckoutPriceResponseDto } from "@capella/shared";
 import { PromoCodeBox } from "@/components/checkout/promo-code-box";
+import { salesSignature } from "@/lib/promo/promo-code";
 
 const dict = getDict("en");
 
@@ -76,7 +77,22 @@ describe("PromoCodeBox", () => {
 
     typeCode("save10");
     fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Apply code" }));
-    expect(onSave).toHaveBeenCalledWith("save10");
+    // The acceptance is kept with the exact prices shown, so a later price change asks again.
+    expect(onSave).toHaveBeenCalledWith("save10", salesSignature([{ index: 0, nameAr: "زيت", nameEn: "Hair oil", previousLineTotal: 150, lineTotal: 160 }]));
+  });
+
+  it("asks again when re-pricing a saved code would replace a sale the customer has not accepted", () => {
+    const onConfirm = vi.fn();
+    const onDecline = vi.fn();
+    const promo = applied({ replacedSales: [{ index: 0, nameAr: "زيت", nameEn: "Hair oil", previousLineTotal: 150, lineTotal: 160 }] }).promo;
+    render(createElement(PromoCodeBox, props({ savedCode: "save10", promo, confirmation: promo, onConfirm, onDecline })));
+    const dialog = screen.getByRole("dialog", { name: "Replace sale prices?" });
+    expect(within(dialog).getByText("Prices changed since you applied this code. It now replaces the sale on these items:")).toBeInTheDocument();
+    expect(within(dialog).getByText(/Hair oil/)).toHaveTextContent("160");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Apply code" }));
+    expect(onConfirm).toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Keep current prices" }));
+    expect(onDecline).toHaveBeenCalled();
   });
 
   it("shows an applied code with its saving and lets the customer remove it", () => {

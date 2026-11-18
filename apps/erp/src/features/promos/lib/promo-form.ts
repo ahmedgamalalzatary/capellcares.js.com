@@ -129,19 +129,18 @@ function cairoWallClock(instant: number) {
   return { year: +parts.year!, month: +parts.month!, day: +parts.day!, hour: +parts.hour!, minute: +parts.minute!, second: +parts.second! };
 }
 
-/** The UTC instant (ISO) for a datetime-local value read as Cairo time. */
-export function instantFromCairoInput(value: string): string {
+/** The UTC instant (ISO) for a datetime-local value read as Cairo time. Null for a time Cairo skips when it moves its clock
+ * forward; a time that happens twice when it moves the clock back is read as the first one (still summer time). */
+export function instantFromCairoInput(value: string): string | null {
   const [date, time] = value.split("T");
   const [year, month, day] = date!.split("-").map(Number);
   const [hour, minute] = (time ?? "00:00").split(":").map(Number);
   const wall = Date.UTC(year!, month! - 1, day!, hour!, minute!);
-  let instant = wall;
-  // Two passes settle the offset even across a summer-time change.
-  for (let pass = 0; pass < 2; pass += 1) {
-    const seen = cairoWallClock(instant);
-    instant += wall - Date.UTC(seen.year, seen.month - 1, seen.day, seen.hour, seen.minute, seen.second);
-  }
-  return new Date(instant).toISOString();
+  const wanted = `${date}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  // Cairo is UTC+2 in winter and UTC+3 in summer: try both, keep those that read back as the typed time, earliest first.
+  const matches = [3, 2].map((offset) => wall - offset * 60 * 60 * 1000)
+    .filter((instant) => cairoInputFromInstant(new Date(instant).toISOString()) === wanted);
+  return matches.length > 0 ? new Date(matches[0]!).toISOString() : null;
 }
 
 /** A datetime-local value showing an instant in Cairo time. */
@@ -166,7 +165,12 @@ export function validatePromoForm(form: PromoFormState): { payload: PromoCodeCre
     }
     return value;
   };
-  const instant = (value: string) => (value ? instantFromCairoInput(value) : null);
+  const instant = (value: string) => {
+    if (!value) return null;
+    const result = instantFromCairoInput(value);
+    if (!result) errors.push(`الوقت ${value.replace("T", " ")} غير موجود في توقيت القاهرة بسبب تقديم الساعة. اختاري وقتًا آخر.`);
+    return result;
+  };
 
   const raw = {
     code: form.code,

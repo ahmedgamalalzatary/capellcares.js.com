@@ -24,8 +24,12 @@ export const PROMO_CODE_STATUSES = ["active", "paused", "stopped"] as const;
 export type PromoCodeStatus = (typeof PROMO_CODE_STATUSES)[number];
 
 const promoTargetSchema = z.object({ type: z.enum(PROMO_TARGET_TYPES), id: z.number().int().positive() }).strict();
-const money = z.number().finite();
-const count = z.number().int().min(1).nullable();
+// Amounts are stored as DECIMAL(10,2) and counts as signed INT: anything finer or larger would round to another value or fail to save.
+const MAX_AMOUNT = 99_999_999.99;
+const MAX_COUNT = 2_147_483_647;
+const isStorableAmount = (value: number) => Math.abs(value) <= MAX_AMOUNT && Math.abs(Math.round(value * 100) - value * 100) < 1e-6;
+const money = (message?: string) => z.number().finite().refine(isStorableAmount, message ? { message } : undefined);
+const count = z.number().int().min(1).max(MAX_COUNT).nullable();
 const isoDate = z.string().datetime({ offset: true }).nullable();
 
 export const promoCodeCreateSchema = z.object({
@@ -35,17 +39,17 @@ export const promoCodeCreateSchema = z.object({
   startsAt: isoDate,
   endsAt: isoDate,
   discountType: z.enum(["percentage", "fixed"]).nullable(),
-  discountValue: money.nullable(),
-  maxDiscountAmount: money.nullable(),
+  discountValue: money("promo.discount_value_invalid").nullable(),
+  maxDiscountAmount: money("promo.cap_invalid").nullable(),
   freeShipping: z.boolean(),
-  gift: z.object({ itemType: z.enum(PROMO_GIFT_ITEM_TYPES), itemId: z.number().int().positive(), qty: z.number().int().min(1) }).strict().nullable(),
+  gift: z.object({ itemType: z.enum(PROMO_GIFT_ITEM_TYPES), itemId: z.number().int().positive(), qty: z.number().int().min(1).max(MAX_COUNT) }).strict().nullable(),
   eligibility: z.object({
     scope: z.enum(["all", "selected"]),
     include: z.array(promoTargetSchema).max(500),
     exclude: z.array(promoTargetSchema).max(500)
   }).strict(),
-  minOrderAmount: money.min(0).nullable(),
-  maxOrderAmount: money.min(0).nullable(),
+  minOrderAmount: money().pipe(z.number().min(0)).nullable(),
+  maxOrderAmount: money().pipe(z.number().min(0)).nullable(),
   minEligiblePieces: count,
   maxDiscountedPieces: count,
   totalUsageLimit: count,

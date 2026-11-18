@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 
 import { db } from "@capella/database/src/db";
 import {
+  customers,
   orderItems,
   orderReviewFlags,
   orders,
@@ -263,4 +264,52 @@ test("a free promo order with free delivery is held from dispatch until staff re
   assert.equal(released!.status, "pending");
   const [flag] = await db.select().from(orderReviewFlags).where(and(eq(orderReviewFlags.orderId, created.id), eq(orderReviewFlags.flagType, "promo_free_review")));
   assert.equal(flag!.status, "resolved");
+});
+
+test("the price endpoint checks a first-order code against the checkout phone once the customer has typed it", async () => {
+  const ids = await getBaselineIds();
+  await createCode({ firstOrderOnly: true });
+  await db.insert(orders).values({ orderCode: "PAST-PHONE", customerType: "guest", customerId: null, fullName: "Earlier", phone: "+201077778888",
+    email: "earlier@capella.test", governorate: "Cairo", cityArea: "Nasr City", addressLine: "Street", buildingApartment: "1", notes: "",
+    paymentMethod: "cod", paymentStatus: "accepted", totalAmount: "100.00" });
+  const token = jwt.sign({ sub: ids.customerId, role: "customer" }, process.env.JWT_ACCESS_SECRET ?? "dev-access-secret", { expiresIn: "15m" });
+  await withTestServer(app, async (request) => {
+    const price = (extra: object) => request("/api/v1/checkout/price", { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+      body: JSON.stringify({ items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }], promoCode: "save10", ...extra }) });
+    assert.equal((await price({})).json.promo.status, "applied");
+    const withPhone = await price({ phone: "01077778888" });
+    assert.equal(withPhone.json.promo?.reason, "first_order", JSON.stringify(withPhone.json));
+    assert.equal((await price({ phone: "not a phone" })).status, 400);
+  });
+});
+
+test("every request that checks a typed code counts toward the same per-account guessing limit", async () => {
+  const ids = await getBaselineIds();
+  const token = jwt.sign({ sub: ids.customerId, role: "customer" }, process.env.JWT_ACCESS_SECRET ?? "dev-access-secret", { expiresIn: "15m" });
+  await withTestServer(app, async (request) => {
+    const headers = { "content-type": "application/json", authorization: `Bearer ${token}`, "x-forwarded-for": "198.51.100.77" };
+    const items = [{ type: "product", variantId: ids.firstVariantId, qty: 1 }];
+    // 20 guesses through the delivery quote (shipping is off here, so each answers 503 after the code is counted).
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      await request("/api/v1/checkout/shipping/quote", { method: "POST", headers, body: JSON.stringify({ items, paymentMethod: "cod",
+        shippingAddress: { cityId: "c", zoneId: "z", districtId: "d" }, promoCode: `GUESS${attempt}` }) });
+    }
+    const price = await request("/api/v1/checkout/price", { method: "POST", headers, body: JSON.stringify({ items, promoCode: "ONEMORE" }) });
+    assert.equal(price.status, 429);
+  });
+});
+
+test("re-pricing the code the customer already typed does not count as another guess", async () => {
+  const ids = await getBaselineIds();
+  await createCode();
+  const [other] = await db.insert(customers).values({ name: "Repricer", email: "repricer@capella.test", passwordHash: "unused" }).$returningId();
+  const token = jwt.sign({ sub: other!.id, role: "customer" }, process.env.JWT_ACCESS_SECRET ?? "dev-access-secret", { expiresIn: "15m" });
+  await withTestServer(app, async (request) => {
+    const headers = { "content-type": "application/json", authorization: `Bearer ${token}`, "x-forwarded-for": "198.51.100.78" };
+    for (let qty = 1; qty <= 30; qty += 1) {
+      const priced = await request("/api/v1/checkout/price", { method: "POST", headers,
+        body: JSON.stringify({ items: [{ type: "product", variantId: ids.firstVariantId, qty: (qty % 3) + 1 }], promoCode: "save10" }) });
+      assert.equal(priced.status, 200, `request ${qty}`);
+    }
+  });
 });

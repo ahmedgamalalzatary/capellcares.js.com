@@ -165,3 +165,121 @@ test("a first-order code held by one open online checkout cannot start a second 
   await assert.rejects(initiate({ ...body, email: "second-session@capella.test" }),
     (error: unknown) => error instanceof PromoRejectedError && error.rejection.reason === "in_use");
 });
+
+const afterExpiry = () => releaseExpiredCheckoutReservations(new Date(Date.now() + 2 * 60 * 60 * 1000));
+const stockOf = async (variantId: number) => (await db.select().from(productVariants).where(eq(productVariants.id, variantId)))[0]!.stockQty;
+
+test("a payment that lands after the checkout expired still creates the order when the stock is there, honoring the code over its limit", async () => {
+  const { payload: body } = await payload(2);
+  const codeId = await createCode({ totalUsageLimit: 1 });
+  const providerOrderId = await initiate(body);
+  const [session] = await db.select().from(checkoutSessions);
+  const variantId = body.items[0]!.variantId;
+  await afterExpiry();
+  const stockAfterExpiry = await stockOf(variantId);
+
+  const result = await processPaymobTransaction(paid(providerOrderId, session!.amountCents));
+  assert.equal(result.outcome, "succeeded");
+  const [order] = await db.select().from(orders).where(eq(orders.id, result.orderId!));
+  assert.equal(order!.promoCodeText, "PAY10");
+  assert.equal(Math.round(Number(order!.totalAmount) * 100), session!.amountCents);
+  assert.equal(await stockOf(variantId), stockAfterExpiry - 2);
+  assert.deepEqual((await uses(codeId)).map((use) => [use.state, use.orderId, use.overLimit]), [["used", order!.id, true]]);
+});
+
+test("a payment that lands after the checkout expired and its stock was sold is kept for staff, with no order and no stock taken", async () => {
+  const { payload: body } = await payload(2);
+  const codeId = await createCode();
+  const providerOrderId = await initiate(body);
+  const [session] = await db.select().from(checkoutSessions);
+  const variantId = body.items[0]!.variantId;
+  await afterExpiry();
+  await db.update(productVariants).set({ stockQty: 1 }).where(eq(productVariants.id, variantId));
+
+  const result = await processPaymobTransaction(paid(providerOrderId, session!.amountCents));
+  assert.equal(result.outcome, "reconciliation_required");
+  const [attempt] = await db.select().from(paymentAttempts).where(eq(paymentAttempts.checkoutSessionId, session!.id));
+  assert.equal(attempt!.failureCode, "PAID_AFTER_RESERVATION_RELEASE");
+  assert.equal(attempt!.paymobTransactionId, String(providerOrderId + 50_000));
+  assert.equal(await stockOf(variantId), 1);
+  assert.equal((await db.select().from(orders)).length, 0);
+  assert.deepEqual((await uses(codeId)).map((use) => use.state), ["released"]);
+});
+
+const refunded = (orderId: number, amountCents: number, refundedCents: number) => [
+  { ...paid(orderId, amountCents), is_refunded: true },
+  { verified: { is_refunded: true, refunded_amount_cents: refundedCents, environment: "test" as const } }
+] as const;
+
+test("a full refund that arrives before the payment's success gives the code use back once the refunded order is recorded", async () => {
+  const { payload: body } = await payload();
+  const codeId = await createCode({ totalUsageLimit: 1 });
+  const providerOrderId = await initiate(body);
+  const [session] = await db.select().from(checkoutSessions);
+  assert.equal((await processPaymobTransaction(...refunded(providerOrderId, session!.amountCents, session!.amountCents))).outcome, "refund_pending_success");
+
+  const result = await processPaymobTransaction(paid(providerOrderId, session!.amountCents));
+  assert.equal(result.outcome, "succeeded");
+  const [order] = await db.select().from(orders).where(eq(orders.id, result.orderId!));
+  assert.equal(order!.providerPaymentStatus, "refunded");
+  assert.deepEqual((await uses(codeId)).map((use) => [use.state, use.orderId, use.releaseReason]), [["released", order!.id, "early_refund"]]);
+});
+
+test("a partial refund before the payment's success keeps the code used, like any partial return", async () => {
+  const { payload: body } = await payload();
+  const codeId = await createCode();
+  const providerOrderId = await initiate(body);
+  const [session] = await db.select().from(checkoutSessions);
+  await processPaymobTransaction(...refunded(providerOrderId, session!.amountCents, 100));
+  const result = await processPaymobTransaction(paid(providerOrderId, session!.amountCents));
+  assert.equal(result.outcome, "succeeded");
+  assert.deepEqual((await uses(codeId)).map((use) => use.state), ["used"]);
+});
+
+test("an online checkout whose code no longer applies is told so first, not given a delivery or amount error", async () => {
+  const { payload: body } = await payload(1);
+  await createCode({ minOrderAmount: "99999.00" });
+  // A delivery quote that no longer matches would otherwise answer SHIPPING_QUOTE_CHANGED before the code is looked at.
+  const stale = { ...body, shippingQuoteId: "quote_stale", shippingAddress: { cityId: "c", zoneId: "z", districtId: "d" } };
+  await assert.rejects(submitCheckout(stale, { idempotencyKey: crypto.randomUUID() }),
+    (error: unknown) => error instanceof PromoRejectedError && error.rejection.reason === "below_min");
+});
+
+test("repeating an online checkout returns its payment link even after its code was paused", async () => {
+  const { payload: body } = await payload(1);
+  const codeId = await createCode();
+  const idempotencyKey = crypto.randomUUID();
+  const intention = async () => ({ intentionId: "pi_paused", orderId: 9901, clientSecret: "paused_secret", checkoutUrl: "https://checkout" });
+  const first = await initiatePaymobCheckout({ payload: body, idempotencyKey, config, ...urls, createIntention: intention });
+  await db.update(promoCodes).set({ status: "paused" }).where(eq(promoCodes.id, codeId));
+  const replay = await initiatePaymobCheckout({ payload: body, idempotencyKey, config, ...urls, createIntention: intention }).catch((error) => error);
+  assert.ok(!(replay instanceof Error), String(replay));
+  assert.equal(replay.checkoutId, first.checkoutId);
+});
+
+test("two identical online checkouts sent at the same moment with a single-use code never refuse the code to the second one", async () => {
+  const { payload: body } = await payload(1);
+  await createCode({ totalUsageLimit: 1 });
+  const idempotencyKey = crypto.randomUUID();
+  const intention = async () => ({ intentionId: "pi_twin", orderId: 9902, clientSecret: "twin_secret", checkoutUrl: "https://checkout" });
+  const results = await Promise.allSettled([1, 2].map(() => initiatePaymobCheckout({ payload: body, idempotencyKey, config, ...urls, createIntention: intention })));
+  for (const result of results) {
+    if (result.status === "rejected") {
+      assert.ok(!(result.reason instanceof PromoRejectedError), String(result.reason));
+      assert.match(String(result.reason), /still in progress/);
+    }
+  }
+  assert.ok(results.some((result) => result.status === "fulfilled"));
+  assert.equal((await db.select().from(checkoutSessions)).length, 1);
+});
+
+test("the same request key with a different code is a different checkout, even when both codes give the same prices", async () => {
+  const { payload: body } = await payload(1);
+  await createCode();
+  await createCode({ code: "TWIN10", codeNormalized: "TWIN10" });
+  const idempotencyKey = crypto.randomUUID();
+  const intention = async () => ({ intentionId: "pi_code", orderId: 9903, clientSecret: "code_secret", checkoutUrl: "https://checkout" });
+  await initiatePaymobCheckout({ payload: body, idempotencyKey, config, ...urls, createIntention: intention });
+  await assert.rejects(initiatePaymobCheckout({ payload: { ...body, promoCode: "twin10" }, idempotencyKey, config, ...urls, createIntention: intention }),
+    /different checkout/);
+});

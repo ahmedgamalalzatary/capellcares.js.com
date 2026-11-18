@@ -788,7 +788,7 @@ test("initiatePaymobCheckout does not recycle a failed attempt for a different c
   assert.equal(sessions[0].state, "failed");
 });
 
-test("processPaymobTransaction flags a paid checkout for reconciliation after its stock was released", async () => {
+test("processPaymobTransaction still creates the order for a payment that lands after expiry while its stock is free, and flags it once the stock is sold", async () => {
   const { initiatePaymobCheckout } = await import("../../src/modules/checkout/paymob-checkout.service.js");
   const { processPaymobTransaction } = await import("../../src/modules/payments/paymob/paymob-transaction.service.js");
   const ids = await getBaselineIds();
@@ -806,17 +806,33 @@ test("processPaymobTransaction flags a paid checkout for reconciliation after it
     createIntention: async () => ({ intentionId: "pi_late", orderId: 9017, clientSecret: "late_secret", checkoutUrl: "https://checkout" })
   });
   await releaseExpiredCheckoutReservations(new Date("2026-09-11T12:31:00Z"));
-  const result = await processPaymobTransaction({ id: 7017, order: { id: 9017 }, amount_cents: 3500,
+  const lateSuccess = () => processPaymobTransaction({ id: 7017, order: { id: 9017 }, amount_cents: 3500,
     currency: "EGP", integration_id: 123, success: true, pending: false, is_live: false,
     is_auth: false, is_capture: false, is_refunded: false, is_voided: false,
     has_parent_transaction: false, source_data: { type: "card" } });
-  const [attempt] = await db.select().from(paymentAttempts).where(eq(paymentAttempts.paymobOrderId, "9017"));
-  const [variant] = await db.select().from(productVariants).where(eq(productVariants.id, ids.firstVariantId));
-  assert.equal(result.outcome, "reconciliation_required");
-  assert.equal(attempt.status, "reconciliation_required");
-  assert.equal(attempt.paymobTransactionId, "7017");
-  assert.equal(variant.stockQty, 10);
+  const stock = async () => (await db.select().from(productVariants).where(eq(productVariants.id, ids.firstVariantId)))[0]!.stockQty;
+  const attempt = async () => (await db.select().from(paymentAttempts).where(eq(paymentAttempts.paymobOrderId, "9017")))[0]!;
+
+  // Sold out in the meantime: nothing to fulfil, so staff refund it.
+  await db.update(productVariants).set({ stockQty: 0 }).where(eq(productVariants.id, ids.firstVariantId));
+  assert.equal((await lateSuccess()).outcome, "reconciliation_required");
+  assert.equal((await attempt()).status, "reconciliation_required");
+  assert.equal((await attempt()).paymobTransactionId, "7017");
+  assert.equal(await stock(), 0);
   assert.equal((await db.select().from(orders)).length, 0);
+  // Once parked for staff it stays with staff, even if Paymob repeats the message after a restock (they may have refunded it).
+  await db.update(productVariants).set({ stockQty: 10 }).where(eq(productVariants.id, ids.firstVariantId));
+  assert.equal((await lateSuccess()).outcome, "reconciliation_required");
+  assert.equal((await db.select().from(orders)).length, 0);
+
+  // A fresh late payment while the stock is free: the customer paid, so the order is created and the stock taken again.
+  await db.update(productVariants).set({ stockQty: 10 }).where(eq(productVariants.id, ids.firstVariantId));
+  await db.update(paymentAttempts).set({ status: "expired", failureCode: null, paymobTransactionId: null }).where(eq(paymentAttempts.paymobOrderId, "9017"));
+  const result = await lateSuccess();
+  assert.equal(result.outcome, "succeeded");
+  assert.equal((await attempt()).status, "succeeded");
+  assert.equal(await stock(), 9);
+  assert.equal((await db.select().from(orders)).length, 1);
 });
 
 test("initiatePaymobCheckout does not return a payment link after its reservation is released", async () => {

@@ -1,21 +1,37 @@
 import type { NextFunction, Request, Response } from "express";
-import { checkoutPriceRequestSchema, type CheckoutPriceResponseDto } from "@capella/shared";
+import { checkoutPriceRequestSchema, normalizePromoCode, type CheckoutPriceResponseDto } from "@capella/shared";
 import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.js";
 import { rateLimit } from "../../middlewares/rate-limit.middleware.js";
 import { priceCheckout } from "../orders/orders.service.js";
 
-// Guessing codes is limited per IP and per account; plain cart pricing (no code) is not counted against it.
-const promoIpLimit = rateLimit({ keyPrefix: "promo-ip", windowMs: 10 * 60 * 1000, max: 30 });
-const promoAccountLimit = rateLimit({ keyPrefix: "promo-account", windowMs: 10 * 60 * 1000, max: 20,
+// Guessing codes is limited per IP and per account, on every request that checks a typed code (price, delivery quote and
+// checkout). Plain cart pricing (no code) is not counted, and neither is the same code again within the window: cart and
+// checkout re-price a saved code on every change, which is not a new guess.
+const PROMO_WINDOW_MS = 10 * 60 * 1000;
+const promoIpLimit = rateLimit({ keyPrefix: "promo-ip", windowMs: PROMO_WINDOW_MS, max: 30 });
+const promoAccountLimit = rateLimit({ keyPrefix: "promo-account", windowMs: PROMO_WINDOW_MS, max: 20,
   key: (req) => `customer:${(req as AuthenticatedRequest).user?.id ?? "none"}` });
+const recentCodes = new Map<string, number>();
+const MAX_RECENT_CODES = 50_000;
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, expiresAt] of recentCodes) if (expiresAt <= now) recentCodes.delete(key);
+}, 60_000).unref?.();
 
 export function limitPromoAttempts(req: Request, res: Response, next: NextFunction) {
   const promoCode = (req.body as { promoCode?: unknown } | undefined)?.promoCode;
   if (typeof promoCode !== "string" || !promoCode.trim()) return next();
+  const userId = (req as AuthenticatedRequest).user?.id;
+  const seenKey = `${userId ?? "guest"}:${req.ip ?? "unknown"}:${normalizePromoCode(promoCode)}`;
+  if ((recentCodes.get(seenKey) ?? 0) > Date.now()) return next();
   promoIpLimit(req, res, (error?: unknown) => {
     if (error) return next(error);
-    if (!(req as AuthenticatedRequest).user) return next();
-    promoAccountLimit(req, res, next);
+    const remember = (failure?: unknown) => {
+      if (!failure && recentCodes.size < MAX_RECENT_CODES) recentCodes.set(seenKey, Date.now() + PROMO_WINDOW_MS);
+      next(failure);
+    };
+    if (!userId) return remember();
+    promoAccountLimit(req, res, remember);
   });
 }
 

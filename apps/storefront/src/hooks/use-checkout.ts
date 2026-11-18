@@ -18,7 +18,7 @@ import { cartLineSizeLabel } from "@/lib/cart-line-size";
 import { clearPendingCheckout, getCheckoutIdempotencyKey, redirectToPaymob, rememberPendingCheckout } from "@/lib/paymob-browser-session";
 import { fillTemplate, promoRejectionMessage } from "@/lib/promo/promo-code";
 import { useCartPromo } from "./use-cart-promo";
-import type { PromoRejectionDto } from "@capella/shared";
+import type { PromoAppliedDto, PromoRejectionDto } from "@capella/shared";
 import type {
   CheckoutCatalogState,
   CheckoutErrors,
@@ -33,9 +33,6 @@ const ONLINE_PAYMENT_MINIMUM = 10;
 export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResult {
   const { lines, clear } = useCart();
   const { user, accessToken } = useAuth();
-  const cartPromo = useCartPromo(lang, lines);
-  const [promoNotice, setPromoNotice] = useState<string | null>(null);
-
   const [form, setForm] = useState<CheckoutFormState>({
     fullName: user?.name ?? "",
     phone: "",
@@ -48,11 +45,15 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
     paymentMethod: PAYMENT_METHODS.cod,
     shippingCityId: "", shippingZoneId: "", shippingDistrictId: ""
   });
+  const cartPromo = useCartPromo(lang, lines, form.phone);
+  const [promoNotice, setPromoNotice] = useState<string | null>(null);
+  const checkoutPhone = EG_PHONE_REGEX.test(form.phone.trim()) ? form.phone.trim() : null;
   const [errors, setErrors] = useState<CheckoutErrors>({});
   const [placing, setPlacing] = useState(false);
   const placingRef = useRef(false);
   const [paymobMethods, setPaymobMethods] = useState<Array<"card" | "wallet">>([]);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [placedPromo, setPlacedPromo] = useState<PromoAppliedDto | null>(null);
   const [availability, setAvailability] = useState<CheckoutShippingAvailability | null>(null);
   const [shippingLoading, setShippingLoading] = useState(true);
   const [shippingError, setShippingError] = useState<string | null>(null);
@@ -101,7 +102,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
 
   const resolved = useMemo<CheckoutResolvedItem[]>(() => {
     return lines
-      .map((line) => {
+      .map((line, index) => {
         if (line.type === "product") {
           const product = products.find((item) => item.id === line.productId);
           const variant = product?.variants.find((item) => item.id === line.variantId);
@@ -111,7 +112,8 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
             title: pickLang(product.name, lang),
             meta: cartLineSizeLabel(line, { products, offers, collections }) ?? variant.size,
             unit: getEffectiveVariantPrice(variant),
-            qty: line.qty
+            qty: line.qty,
+            index
           };
         }
 
@@ -123,7 +125,8 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
             title: pickLang(offer.name, lang),
             meta: cartLineSizeLabel(line, { products, offers, collections }) ?? dict.offers.badge,
             unit: offer.price,
-            qty: line.qty
+            qty: line.qty,
+            index
           };
         }
 
@@ -134,7 +137,8 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
           title: pickLang(collection.name, lang),
           meta: cartLineSizeLabel(line, { products, offers, collections }) ?? dict.collections.badge,
           unit: collection.price,
-          qty: line.qty
+          qty: line.qty,
+          index
         };
       })
       .filter(Boolean) as CheckoutResolvedItem[];
@@ -146,9 +150,14 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
   const promoApplied = cartPromo.applied;
   const appliedCode = promoApplied?.promo?.status === "applied" ? promoApplied.promo.code : null;
   const productsTotal = promoApplied ? promoApplied.productsTotal : subtotal;
+  // Each line at what the customer pays for it with the code (partial pieces, fixed amounts and replaced sales included).
+  const shownItems = useMemo(() => resolved.map((item) => {
+    const paid = promoApplied?.items.find((line) => line.index === item.index);
+    return paid ? { ...item, lineTotal: paid.lineTotal } : item;
+  }), [resolved, promoApplied]);
   const paymentMethod = form.paymentMethod;
   const quoteKey = JSON.stringify([items, paymentMethod, form.shippingCityId, form.shippingZoneId,
-    form.shippingDistrictId, user?.id ?? null, accessToken, Math.round(productsTotal * 100), appliedCode]);
+    form.shippingDistrictId, user?.id ?? null, accessToken, Math.round(productsTotal * 100), appliedCode, appliedCode ? checkoutPhone : null]);
   const shippingQuote = quoted?.key === quoteKey && availability?.enabled ? quoted.value : null;
   const totalAmount = productsTotal + (shippingQuote?.shippingAmountCents ?? 0) / 100;
 
@@ -181,7 +190,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
     if (cartPromo.loading) return;
     fetchCheckoutShippingQuote({ items, paymentMethod, shippingAddress: {
       cityId: form.shippingCityId, zoneId: form.shippingZoneId, districtId: form.shippingDistrictId
-    }, ...(appliedCode ? { promoCode: cartPromo.savedCode } : {}) }, accessToken, user != null).then(value => {
+    }, ...(appliedCode ? { promoCode: cartPromo.savedCode, ...(checkoutPhone ? { phone: checkoutPhone } : {}) } : {}) }, accessToken, user != null).then(value => {
       if (cancelled) return;
       if (value.productsTotalCents !== Math.round(productsTotal * 100)) {
         setShippingError(dict.checkout.amountChanged);
@@ -190,6 +199,11 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
     }).catch(error => {
       if (cancelled) return;
       const code = (error as { code?: string })?.code;
+      // The code stopped applying after it was priced: price it again, which removes it and says why.
+      if (code === "PROMO_REJECTED") {
+        cartPromo.refresh();
+        return;
+      }
       setShippingError(code === "SHIPPING_UNSUPPORTED" ? dict.checkout.shippingUnsupported
         : code === "SHIPPING_COD_LIMIT" ? dict.checkout.shippingCodLimit
           : dict.checkout.shippingUnavailable);
@@ -226,6 +240,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
     if (availability == null || shippingLoading) next.shipping = shippingError ?? dict.common.loading;
     if (cartPromo.loading) next.submit = dict.common.loading;
     if (cartPromo.failed) next.submit = dict.promo.checkFailed;
+    if (cartPromo.confirmation) next.submit = dict.promo.confirmNeeded;
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -268,6 +283,7 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
         rememberPendingCheckout(data.checkoutId, lang);
         redirectToPaymob(data.checkoutUrl);
       } else {
+        setPlacedPromo(promoApplied?.promo?.status === "applied" ? promoApplied.promo : null);
         setOrderId(data.orderCode);
         clear();
         clearPendingCheckout();
@@ -314,17 +330,22 @@ export function useCheckout({ lang, dict }: CheckoutViewProps): UseCheckoutResul
     paymobMethods: belowOnlineMinimum ? [] : paymobMethods,
     promo: {
       savedCode: cartPromo.savedCode,
-      saveCode: (code: string | null) => { setPromoNotice(null); cartPromo.saveCode(code); },
+      saveCode: (code: string | null, acceptedSales?: string) => { setPromoNotice(null); cartPromo.saveCode(code, acceptedSales); },
       signedIn: cartPromo.signedIn,
       loginHref: cartPromo.loginHref,
       result: cartPromo.priced?.promo ?? null,
+      applied: promoApplied?.promo?.status === "applied" ? promoApplied.promo : null,
+      confirmation: cartPromo.confirmation,
+      confirm: cartPromo.confirm,
+      decline: () => { setPromoNotice(null); cartPromo.decline(); },
       preview: cartPromo.preview,
       productsTotal,
       notice: promoNotice,
       onlineMinimum: belowOnlineMinimum && paymobMethods.length > 0
     },
     orderId,
-    resolved,
+    placedPromo,
+    resolved: shownItems,
     subtotal,
     setField,
     placeOrder

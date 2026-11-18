@@ -116,24 +116,34 @@ export function applyPromoPricing(rules: PromoRules, lines: PromoLine[], context
     return { ok: false, reason: "above_max", maxAmount: rules.maxOrderAmount };
   }
 
-  // Every eligible piece separately (qty 3 = 3 pieces).
-  const pieces = lines.flatMap((line, lineIndex) => isPromoEligible(line, rules.eligibility)
-    ? Array.from({ length: line.qty }, () => ({ lineIndex, originalCents: toCents(line.originalUnitPrice) }))
-    : []);
-  if (rules.minEligiblePieces !== null && pieces.length < rules.minEligiblePieces) {
-    return { ok: false, reason: "min_pieces", missingPieces: rules.minEligiblePieces - pieces.length };
+  // Eligible pieces, counted per line: every piece of a line has the same price, so a line is never split into pieces
+  // (a quantity of thousands costs no more work than a quantity of one).
+  const eligibleQty = lines.map((line) => (isPromoEligible(line, rules.eligibility) ? line.qty : 0));
+  const eligiblePieces = eligibleQty.reduce((sum, qty) => sum + qty, 0);
+  if (rules.minEligiblePieces !== null && eligiblePieces < rules.minEligiblePieces) {
+    return { ok: false, reason: "min_pieces", missingPieces: rules.minEligiblePieces - eligiblePieces };
   }
   // A code limited to chosen items gives nothing, not even free delivery or a gift, to a cart without any of them.
-  if (rules.eligibility.scope === "selected" && pieces.length === 0) return { ok: false, reason: "no_effect" };
+  if (rules.eligibility.scope === "selected" && eligiblePieces === 0) return { ok: false, reason: "no_effect" };
 
   // Both percentage and fixed discounts scale with the original price, so the biggest saving against the original
   // price is simply the most expensive pieces first (ties keep cart order).
-  let chosen = rules.discountType && rules.discountValue ? pieces : [];
-  if (rules.maxDiscountedPieces !== null && chosen.length > rules.maxDiscountedPieces) {
-    chosen = [...chosen].sort((a, b) => b.originalCents - a.originalCents || a.lineIndex - b.lineIndex).slice(0, rules.maxDiscountedPieces);
+  let chosenQty = rules.discountType && rules.discountValue ? [...eligibleQty] : lines.map(() => 0);
+  if (rules.maxDiscountedPieces !== null && chosenQty.reduce((sum, qty) => sum + qty, 0) > rules.maxDiscountedPieces) {
+    let remaining = rules.maxDiscountedPieces;
+    const byPrice = lines.map((line, index) => ({ index, cents: toCents(line.originalUnitPrice) }))
+      .sort((a, b) => b.cents - a.cents || a.index - b.index);
+    const limited = lines.map(() => 0);
+    for (const { index } of byPrice) {
+      limited[index] = Math.min(chosenQty[index]!, remaining);
+      remaining -= limited[index]!;
+    }
+    chosenQty = limited;
   }
 
-  const chosenOriginalCents = chosen.reduce((sum, piece) => sum + piece.originalCents, 0);
+  const chosenCount = () => chosenQty.reduce((sum, qty) => sum + qty, 0);
+  let lineOriginalCents = lines.map((line, index) => chosenQty[index]! * toCents(line.originalUnitPrice));
+  let chosenOriginalCents = lineOriginalCents.reduce((sum, cents) => sum + cents, 0);
   let discountCents = 0;
   if (rules.discountType === "percentage" && rules.discountValue) {
     discountCents = Math.round(chosenOriginalCents * rules.discountValue / 100);
@@ -144,26 +154,28 @@ export function applyPromoPricing(rules: PromoRules, lines: PromoLine[], context
 
   const freeShipping = rules.freeShipping && context.shippingAvailable;
   const gift = rules.hasGift && context.giftAvailable;
-  if (chosen.length === 0 || discountCents === 0) {
+  if (chosenCount() === 0 || discountCents === 0) {
     if (!freeShipping && !gift) {
       if (rules.freeShipping && !context.shippingAvailable && !rules.discountType && !rules.hasGift) return { ok: false, reason: "free_shipping_unavailable" };
       if (rules.hasGift && !context.giftAvailable && !rules.discountType && !rules.freeShipping) return { ok: false, reason: "gift_unavailable" };
       return { ok: false, reason: "no_effect" };
     }
-    chosen = [];
+    chosenQty = lines.map(() => 0);
+    lineOriginalCents = lines.map(() => 0);
+    chosenOriginalCents = 0;
     discountCents = 0;
   }
 
   // Each line's share of the discount, in proportion to the original price of its discounted pieces.
-  const chosenByLine = lines.map((_, index) => chosen.filter((piece) => piece.lineIndex === index));
-  const lineOriginalCents = chosenByLine.map((linePieces) => linePieces.reduce((sum, piece) => sum + piece.originalCents, 0));
   const exactShares = lineOriginalCents.map((cents) => chosenOriginalCents === 0 ? 0 : discountCents * cents / chosenOriginalCents);
   const lineDiscountCents = allocate(discountCents, exactShares, lines.map((line) => toCents(line.originalUnitPrice)));
+  // A line that rounding leaves with no share gets nothing from the code, so it keeps its own price and sale.
+  const discountedQty = chosenQty.map((qty, index) => (lineDiscountCents[index]! > 0 ? qty : 0));
 
   let saleGivenUpCents = 0;
   const replacedSales: Array<{ key: string; previousLineTotal: number; lineTotal: number }> = [];
   const pricedLines = lines.map((line, index): PromoPricedLine => {
-    const discounted = chosenByLine[index]!.length;
+    const discounted = discountedQty[index]!;
     if (discounted === 0) {
       return { key: line.key, unitPrice: line.unitPrice, lineTotal: line.lineTotal, discountedPieces: 0, promoDiscount: 0, saleGivenUp: 0, replacedSaleDiscountId: null };
     }

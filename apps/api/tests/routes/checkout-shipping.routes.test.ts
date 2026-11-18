@@ -4,6 +4,9 @@ import { app } from "../../src/app.js";
 import { withTestServer } from "../helpers/request.js";
 import { getBaselineIds, resetApiTestDatabase } from "../helpers/database.js";
 import { selectedDestination, shippingBuyer, withShippingEnvironment } from "../helpers/checkout-shipping.js";
+import jwt from "jsonwebtoken";
+import { db } from "@capella/database/src/db";
+import { promoCodes } from "@capella/database/drizzle/schema";
 
 beforeEach(resetApiTestDatabase);
 test("inactive shipping reports the legacy checkout mode without provider calls", async () => {
@@ -49,4 +52,22 @@ test("enabled but unverified shipping returns a recoverable error and never fall
       assert.equal(JSON.stringify(response.json).includes("fixture-secret"), false);
     });
   }, false);
+});
+
+test("a delivery quote with a code that no longer applies answers with the code's reason instead of quoting the full price", async () => {
+  await withShippingEnvironment(async () => {
+    const ids = await getBaselineIds();
+    await db.insert(promoCodes).values({ code: "BIGONLY", codeNormalized: "BIGONLY", arName: "خصم", enName: "Big", status: "active",
+      startsAt: new Date(Date.now() - 60_000), discountType: "percentage", discountValue: "10.00", eligibilityScope: "all", minOrderAmount: "99999.00" });
+    const token = jwt.sign({ sub: ids.customerId, role: "customer" }, process.env.JWT_ACCESS_SECRET ?? "dev-access-secret", { expiresIn: "15m" });
+    await withTestServer(app, async request => {
+      const quote = await request("/api/v1/checkout/shipping/quote", { method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+        body: JSON.stringify({ items: [{ type: "product", variantId: ids.firstVariantId, qty: 1 }], paymentMethod: "cod",
+          shippingAddress: selectedDestination, promoCode: "bigonly" }) });
+      assert.equal(quote.status, 409, JSON.stringify(quote.json));
+      assert.equal(quote.json.code, "PROMO_REJECTED");
+      assert.equal(quote.json.promo.reason, "below_min");
+    });
+  });
 });

@@ -56,6 +56,20 @@ describe("validatePromoForm", () => {
     expect(instantFromCairoInput("2030-07-01T10:00")).toBe("2030-07-01T07:00:00.000Z");
   });
 
+  it("refuses a time skipped when Cairo moves its clock forward, instead of silently saving another hour", () => {
+    // 24 April 2026: 00:00 becomes 01:00, so 00:30 never happens.
+    expect(instantFromCairoInput("2026-04-24T00:30")).toBeNull();
+    const result = validatePromoForm({ ...filled(), startsAt: "2026-04-24T00:30" });
+    expect(result.payload).toBeNull();
+    expect(result.errors).toContain("الوقت 2026-04-24 00:30 غير موجود في توقيت القاهرة بسبب تقديم الساعة. اختاري وقتًا آخر.");
+  });
+
+  it("reads a time that happens twice when Cairo moves its clock back as the first one (still summer time)", () => {
+    // 29 October 2026: 24:00 becomes 23:00, so 23:30 happens at 20:30 and again at 21:30 UTC.
+    expect(instantFromCairoInput("2026-10-29T23:30")).toBe("2026-10-29T20:30:00.000Z");
+    expect(instantFromCairoInput("2026-10-29T22:30")).toBe("2026-10-29T19:30:00.000Z");
+  });
+
   it("includes the gift and private customers only when switched on", () => {
     const result = validatePromoForm({
       ...filled(),

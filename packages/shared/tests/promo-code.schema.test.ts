@@ -94,6 +94,21 @@ describe("promoCodeCreateSchema", () => {
     }
   });
 
+  test("amounts must fit the stored precision and range, so nothing rounds to zero or fails to save", () => {
+    assert.ok(issues({ ...valid, discountType: "fixed", discountValue: 0.001 }).includes("promo.discount_value_invalid"));
+    assert.ok(issues({ ...valid, discountType: "fixed", discountValue: 100_000_000 }).includes("promo.discount_value_invalid"));
+    assert.ok(issues({ ...valid, maxDiscountAmount: 10.005 }).includes("promo.cap_invalid"));
+    assert.ok(issues({ ...valid, minOrderAmount: 0.001 }).length > 0);
+    assert.ok(issues({ ...valid, maxOrderAmount: 100_000_000 }).length > 0);
+    assert.deepEqual(issues({ ...valid, discountType: "fixed", discountValue: 99_999_999.99, minOrderAmount: 0.5 }), []);
+  });
+
+  test("counts fit the stored whole-number range", () => {
+    assert.ok(issues({ ...valid, totalUsageLimit: 2_147_483_648 }).length > 0);
+    assert.ok(issues({ ...valid, perCustomerLimit: 2_147_483_648 }).length > 0);
+    assert.deepEqual(issues({ ...valid, totalUsageLimit: 2_147_483_647 }), []);
+  });
+
   test("a private code needs its customers, and only a private code may list customers", () => {
     assert.deepEqual(issues({ ...valid, isPrivate: true }), ["promo.customers_required"]);
     assert.deepEqual(issues({ ...valid, isPrivate: true, customerIds: [5, 6] }), []);

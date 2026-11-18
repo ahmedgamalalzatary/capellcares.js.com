@@ -475,7 +475,7 @@ New keys alongside `discounts.manage`, granted per staff member by the admin:
 | Gift out of stock | The free gift is out of stock; the rest of the code still applies |
 
 - Rate-limit code attempts per account and IP.
-- Order confirmation, account order page and invoice show the code and savings.
+- Order confirmation, account order page and invoice show the code and savings. *(As built: the order confirmation and the account order page show them. The store has no invoice document yet, so there is nothing to add the code to; it belongs with whatever builds invoices.)*
 
 ---
 
@@ -611,7 +611,7 @@ Each phase can be released on its own. It leaves production working and has its 
 
 **Done when:** customers use percentage and fixed codes on COD orders. The Bosta dispatch, COD collection and cancellation checks pass for orders with codes. Every release path has a test.
 
-**As built:** `priceCheckout` applies the code (`apps/api/src/modules/promos/promo-checkout.ts`), so the cart price endpoint (`POST /api/v1/checkout/price`), the shipping quote and checkout all see the same line totals. The binding check locks the `promo_codes` row inside the order transaction. A refused code returns `409 PROMO_REJECTED` with the reason. Online payment with a code returns `online_payment_unavailable` until Phase 3. A free order raises the `promo_free_review` alert; holding its delivery job is added with free shipping in Phase 5, the first phase in which a delivered order can total 0. First-order and private checks already run here; Phase 4 completes their identity cases.
+**As built:** `priceCheckout` applies the code (`apps/api/src/modules/promos/promo-checkout.ts`), so the cart price endpoint (`POST /api/v1/checkout/price`), the shipping quote and checkout all see the same line totals. The binding check locks the `promo_codes` row inside the order transaction. A refused code returns `409 PROMO_REJECTED` with the reason. Online payment with a code returns `online_payment_unavailable` until Phase 3. A free order raises the `promo_free_review` alert and holds its delivery job (`PROMO_FREE_REVIEW`) until staff accept it; retrying the delivery resolves the alert. First-order and private checks already run here; Phase 4 completes their identity cases.
 
 ### Phase 3: Paymob support
 
@@ -628,7 +628,9 @@ Each phase can be released on its own. It leaves production working and has its 
 
 **As built:** `createReservedCheckout` re-checks the code under its row lock and inserts a `reserved` redemption. The webhook copies the session's promo columns and line amounts onto the order and converts the redemption to `used`. Releases happen on initiation rejection and recycling (`payment_failed`), on the third decline (`payment_failed`), and on session expiry (`session_expired`, or `early_refund` when Paymob refunded before the order existed). A limit reached only because of open online payments returns `in_use`. Payments under EGP 10 return `PAYMENT_MINIMUM`, and the storefront hides online payment below that.
 
-**Late payment, in practice:** today a payment that lands after its reservation was released creates no order. The checkout is parked as `PAID_AFTER_RESERVATION_RELEASE` for staff to refund, and the code use stays released. The `over_limit` conversion (a released hold honored when an order is created) is a safety net for any path that does create such an order.
+**Late payment, in practice:** a payment that lands after its checkout expired still creates the order when the stock it held is free again. The webhook takes that stock back (all or nothing) and the code use becomes `used` with `over_limit = true`. When any of the stock was sold in the meantime, the payment is parked as `PAID_AFTER_RESERVATION_RELEASE` for staff to refund, with no order, and the code use stays released. A payment already parked for staff stays with staff even if Paymob repeats it later. A payment Paymob refunded before it succeeded is never honored this way.
+
+**Refund before success:** when Paymob refunds the whole amount before the success message arrives, the order is still recorded (already refunded, delivery blocked) and its code use is released as `early_refund`. A partial refund keeps the use, like any partial return.
 
 ### Phase 4: First-order and private codes
 
@@ -641,7 +643,19 @@ Each phase can be released on its own. It leaves production working and has its 
 
 **Done when:** first-order and private codes reject correctly in every identity case in §7 (#22–25).
 
-**As built:** the checks run in `promo-checkout.ts` from Phase 2. A first-order code is refused when the account or the checkout phone (in any format) has any earlier order, including denied ones. It is also refused when the customer already holds or used that code (two open online checkouts). The per-customer limit counts by account or phone, so a re-created account is still limited. Private codes check the account, so a forwarded code is refused. Released uses never count. The cases are covered in `apps/api/tests/services/promo-identity.test.ts`. The ERP customer picker shipped in Phase 1, and `show_in_account` is stored but always off.
+**As built:** the checks run in `promo-checkout.ts` from Phase 2. A first-order code is refused when the account or the checkout phone (in any format) has any earlier order, including denied ones. It is also refused when the customer already holds or used any first-order code, not only this one (two open online checkouts, or two different welcome codes). The order transaction locks the customer while it checks a first-order code, so two first-order codes submitted at the same moment cannot both pass. The per-customer limit counts by account or phone, so a re-created account is still limited. Private codes check the account, so a forwarded code is refused. Released uses never count. The cases are covered in `apps/api/tests/services/promo-identity.test.ts`. The ERP customer picker shipped in Phase 1, and `show_in_account` is stored but always off.
+
+**Review follow-up (phases 1-4):**
+
+- Every checkout request keeps to the cart's limits (at most 999 of a line, 200 lines), and the pricing engine works per line, never per piece.
+- A line that rounding leaves with no share of the discount keeps its own price and sale.
+- Cart and checkout show each line at what is paid with the code. The summary shows the subtotal, the sale prices the code replaced (+) and the code's saving (-), which add up to the total.
+- A sale replacement needs the customer's yes for exactly the lines and prices shown. A code saved as a guest, or re-priced after a cart or price change, asks again before it counts; checkout waits for the answer. Declining removes the code.
+- Once the checkout phone is valid, the cart price and the delivery quote check the code against it too. A delivery quote for a code that no longer applies answers `409 PROMO_REJECTED`, and online checkout reports a refused code before any delivery or amount error.
+- A repeated online checkout gets its payment link back before anything is re-priced, so a code paused or used up since cannot refuse the customer's own open payment. Two identical requests at the same moment never refuse the code to the second.
+- The delivery quote and the online-checkout repeat check are bound to the code itself, not only its prices (§7, case 34).
+- The code-guessing limit covers the price, delivery quote and checkout requests. The same code again within the window is not a new guess.
+- ERP: amounts must fit DECIMAL(10,2) (two decimals, under 100,000,000) and counts a signed INT. A schedule time Cairo skips when the clock moves forward is refused; a time that happens twice when it moves back is read as the first one.
 
 ### Phase 5: Free shipping
 
