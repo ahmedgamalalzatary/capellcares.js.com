@@ -18,11 +18,11 @@ export function ShopRowSection({
   children: ReactNode;
 }) {
   return (
-    <section className="mb-14">
+    <section className="mb-8">
       <ShopSectionHeading color={color} viewAll={viewAll}>
         {title}
       </ShopSectionHeading>
-      <ShopCardRow lang={lang}>{children}</ShopCardRow>
+      <ShopCardRow lang={lang} fixedCards>{children}</ShopCardRow>
     </section>
   );
 }

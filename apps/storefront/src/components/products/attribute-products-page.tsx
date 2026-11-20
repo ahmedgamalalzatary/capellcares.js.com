@@ -32,7 +32,7 @@ export async function AttributeProductsPage({
       />
       <header className="page-head flex! items-center gap-5">
         {imagePath ? (
-          <span className="relative size-20 shrink-0 overflow-hidden rounded-3xl bg-surface shadow-[inset_0_0_0_3px_var(--accent-soft)] sm:size-28">
+          <span className="relative size-20 shrink-0 overflow-hidden rounded-full bg-white shadow-[inset_0_0_0_3px_var(--ink)] sm:size-28">
             <Image src={imagePath} alt="" fill sizes="112px" className="object-contain p-2" />
           </span>
         ) : null}

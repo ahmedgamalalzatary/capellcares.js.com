@@ -112,7 +112,7 @@ export function BrandGrid({ brands, lang, label }: { brands: ProductAttribute[];
 /** The top of the shop page: every gender as a wide picture banner. The picture carries the design, so the name is its label for screen readers. */
 export function GenderTiles({ genders, lang, label, className = "" }: { genders: ProductAttribute[]; lang: Language; label: string; className?: string }) {
   return (
-    <nav id="genders" aria-label={label} className={`mb-6 scroll-mt-28 ${className}`}>
+    <nav id="genders" aria-label={label} className={`mb-8 scroll-mt-28 ${className}`}>
       {/* Three to a row on every screen size, sharing the width, so nothing scrolls sideways. */}
       <ul className="m-0 [display:grid] list-none grid-cols-3 gap-2 p-0 sm:gap-4">
         {genders.map((gender) => {

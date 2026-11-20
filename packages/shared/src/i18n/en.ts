@@ -242,7 +242,7 @@ export const en = {
     unavailableItem: "No longer available"
   },
   advices: {
-    title: "Falta & Zubi",
+    title: "Falta & Zoobi",
     description: "Tips for choosing and playing with toys, from Falta.",
     eyebrow: "Falta advices",
     tipBadge: "Tip",
@@ -327,7 +327,7 @@ export const en = {
     signupSubtitle: "One quick step and you are ready to shop."
   },
   langSwitch: { ar: "العربية", en: "English", short: "EN" },
-  badges: { new: "New Arrivals", bestseller: "Bestseller", offer: "Offer", discount: "{n}% OFF" },
+  badges: { new: "New", bestseller: "Bestseller", offer: "Offer", discount: "{n}% OFF" },
   ask: {
     sections: {
       products: "Products",

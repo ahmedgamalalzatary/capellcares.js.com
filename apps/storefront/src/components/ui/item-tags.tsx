@@ -17,10 +17,11 @@ export interface ItemTag {
 type Variant = "float" | "badge";
 type Size = "default" | "compact";
 
-// Floating accent pill — sits on top of an illustration (cards, detail images). Default is the roomy size; it shrinks only for a mobile view (below `md`) inside a grid flagged `data-cols="2"` where narrow cards would overflow — every other case keeps the roomy size.
+// Floating accent pill — sits on top of an illustration (cards, detail images). On phones (below `sm`) it always takes the compact size, since phone cards are narrow (the shop rows' are 160px); it also shrinks below `md` inside a grid flagged `data-cols="2"` where narrow cards would overflow; otherwise it keeps the roomy size.
 // Capella's corner label (square, uppercase, spaced letters), on the footer's dark purple.
 const FLOAT_BASE =
   "inline-flex items-center gap-1 bg-ink text-xs font-bold uppercase tracking-[0.12em] text-white px-3 py-1.5 " +
+  "max-sm:px-2 max-sm:py-1 max-sm:text-[10px] max-sm:tracking-[0.06em] " +
   "max-md:group-data-[cols=2]/cards:px-2 max-md:group-data-[cols=2]/cards:py-1 " +
   "max-md:group-data-[cols=2]/cards:text-[10px] max-md:group-data-[cols=2]/cards:tracking-[0.06em]";
 // Compact float: narrow cards outside a `group/cards` grid (the search overlay's popular row), where the roomy size overpowers a 10rem card.

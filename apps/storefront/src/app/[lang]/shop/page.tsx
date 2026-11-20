@@ -67,7 +67,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
       )}
 
       {mainCategories.length > 0 && (
-        <section id="categories" className="mb-14 scroll-mt-28">
+        <section id="categories" className="mb-8 scroll-mt-28">
           <ShopSectionHeading color="magenta" viewAll={{ href: `/${lang}/categories`, label: dict.shop.viewAll }}>
             {dict.shop.byCategory}
           </ShopSectionHeading>
@@ -122,7 +122,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
       )}
 
       {shopBrands.length > 0 && (
-        <section id="brands" className="mb-6 scroll-mt-28">
+        <section id="brands" className="mb-8 scroll-mt-28">
           <ShopSectionHeading color="blue" viewAll={{ href: `/${lang}/brands`, label: dict.shop.viewAll }}>
             {dict.shop.byBrand}
           </ShopSectionHeading>

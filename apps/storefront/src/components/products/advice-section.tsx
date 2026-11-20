@@ -16,7 +16,7 @@ export function AdviceSection({
   if (advices.length === 0) return null;
 
   return (
-    <section className="mb-14">
+    <section className="mb-8">
       <ShopHeading color="cyan">{dict.advices.title}</ShopHeading>
 
       <ShopCardRow lang={lang}>

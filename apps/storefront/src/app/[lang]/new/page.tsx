@@ -42,7 +42,7 @@ export default async function NewProductsPage({ params }: { params: Promise<{ la
         ]}
       />
       <header className="page-head ">
-        <h1>{dict.badges.new}</h1>
+        <h1>{dict.shop.newProducts}</h1>
       </header>
 
       <ProductGrid
