@@ -136,7 +136,7 @@ export function SearchOverlay({ lang, dict, open, onClose, bestsellers = [], cat
           open ? "translate-y-0" : "-translate-y-4"
         ].join(" ")}
       >
-        <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-black bg-canvas shadow-(--shadow-2)">
+        <div className="flex min-h-0 flex-col overflow-hidden rounded-lg bg-canvas shadow-(--shadow-2)">
           <form onSubmit={submit} className="flex shrink-0 items-center gap-3 border-b border-black px-5 py-4">
             <Icon.Search />
             <input

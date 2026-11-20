@@ -89,7 +89,7 @@ export function Footer({ lang, dict }: { lang: Language; dict: any }) {
               <Icon.CashOnDelivery className="h-24 w-24" />
             </div>
             {isAr ? (
-              <Image src="/payments/taly-ar.svg" alt="تالي" title="تالي" width={92} height={42} className="h-10 w-auto" />
+              <Image src="/payments/taly-ar.svg" alt="تالي" title="تالي" width={90} height={40} className="h-10 w-auto" />
             ) : (
               <Image src="/payments/taly.svg" alt="Taly" title="Taly" width={87} height={40} className="h-10 w-auto" />
             )}

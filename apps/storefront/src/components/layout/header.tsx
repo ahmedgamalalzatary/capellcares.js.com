@@ -71,7 +71,7 @@ export function Header({ lang, dict, menuEntries, brands = [], genders = [], ann
       ) : null}
 
       {/* Full page width, in the page background colour (--page-bg), flush under the announcement bar. While the menu or search is open it must rise above the floating WhatsApp button (z-50); the search overlay lives inside it, so while search is open it must also rise above the announcement bar (z-61). */}
-      <header className={`sticky top-0 ${searchOpen ? "z-70" : mobileOpen ? "z-60" : "z-30"} bg-(--page-bg) min-[880px]:border-b min-[880px]:border-(--logo-pink)`}>
+      <header className={`sticky top-0 ${searchOpen ? "z-70" : mobileOpen ? "z-60" : "z-30"} bg-(--page-bg) min-[880px]:border-b min-[880px]:border-(--hairline)`}>
       <div className="container">
       <div className="grid items-center gap-2 py-1.5 sm:gap-4 grid-cols-[1fr_auto_1fr] min-[880px]:grid-cols-[auto_auto_1fr_auto] min-[880px]:gap-8">
         {/* Mobile left cluster: menu · login */}
@@ -102,9 +102,9 @@ export function Header({ lang, dict, menuEntries, brands = [], genders = [], ann
           aria-label={dict.brand}
         >
           <Image
-            src="/logo1.png"
+            src="/logo2.png"
             alt={dict.brand}
-            width={426}
+            width={427}
             height={600}
             priority
             className="h-14 w-auto object-cover sm:h-[50px]"
