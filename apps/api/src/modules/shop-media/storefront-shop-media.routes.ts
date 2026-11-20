@@ -1,14 +1,11 @@
 import { Router } from "express";
 import { wrapAsync } from "../../lib/async-route.js";
-import {
-  listStorefrontShopCustomSectionsController,
-  listStorefrontShopMediaSectionsController
-} from "./storefront-shop-media.controller.js";
+import { listStorefrontShopLayoutController, listStorefrontShopMediaSectionsController } from "./storefront-shop-media.controller.js";
 
 export const storefrontShopMediaRoutes = Router();
 
 storefrontShopMediaRoutes.get("/", wrapAsync(listStorefrontShopMediaSectionsController));
 
-export const storefrontShopCustomSectionsRoutes = Router();
+export const storefrontShopLayoutRoutes = Router();
 
-storefrontShopCustomSectionsRoutes.get("/", wrapAsync(listStorefrontShopCustomSectionsController));
+storefrontShopLayoutRoutes.get("/", wrapAsync(listStorefrontShopLayoutController));

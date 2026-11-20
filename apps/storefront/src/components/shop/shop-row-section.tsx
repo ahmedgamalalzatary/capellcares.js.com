@@ -3,7 +3,7 @@ import type { Language } from "@capella/shared";
 import { ShopCardRow } from "@/components/shop/shop-card-row";
 import { ShopHeading, ShopSectionHeading } from "@/components/shop/shop-tiles";
 
-/** A shop page section of cards: its title with a "View all" link, then one sideways-scrolling row. Bestsellers, new, offers and every custom section use it, so they all look the same. */
+/** A shop page section of cards: its title with a "View all" link, then one sideways-scrolling row. Bestsellers, new, offers and every category section use it, so they all look the same. */
 export function ShopRowSection({
   title,
   color,

@@ -383,18 +383,25 @@ export interface ShopMediaSectionItem {
   updatedAt?: string;
 }
 
+/** A picture section. Its place on the shop page is its ShopPageBlock. */
 export interface ShopMediaSection {
   id: number;
-  /** 1 = the fixed banner at the top of the shop page; null = a picture section placed among the shop page's custom sections. */
-  slot: 1 | null;
   status: "active" | "inactive";
   items: ShopMediaSectionItem[];
   createdAt?: string;
   updatedAt?: string;
 }
 
-/** One of the shop page's custom sections, in the order they show: a category's product row, or a picture section. */
-export type ShopCustomBlock =
+/** Every built-in section of the shop page; each appears at most once. The ERP offers to add any the page doesn't have. */
+export const SHOP_PAGE_BUILT_IN_BLOCK_TYPES = ["genders", "category_tiles", "bestsellers", "new", "offers", "brands", "collections"] as const;
+export type ShopPageBuiltInBlockType = (typeof SHOP_PAGE_BUILT_IN_BLOCK_TYPES)[number];
+
+/** What a shop that never set its layout shows, in order. Collections is left out: it is there to be added from the ERP later. */
+export const SHOP_PAGE_DEFAULT_BLOCK_TYPES: readonly ShopPageBuiltInBlockType[] = ["genders", "category_tiles", "bestsellers", "new", "offers", "brands"];
+
+/** One section of the shop page, in the order they show: a built-in section, a category's product row, or a picture section. */
+export type ShopPageBlock =
+  | { id: number; type: ShopPageBuiltInBlockType; categoryId: null; mediaSection: null; sortOrder: number }
   | { id: number; type: "category"; categoryId: number; mediaSection: null; sortOrder: number }
   | { id: number; type: "media"; categoryId: null; mediaSection: ShopMediaSection; sortOrder: number };
 

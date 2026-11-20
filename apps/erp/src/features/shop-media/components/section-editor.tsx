@@ -39,11 +39,7 @@ type SectionEditorProps = {
   section: EditableSection;
   title: string;
   description: string;
-  /** Only a section saved on its own (the top banner) passes these; a custom picture section is saved with the whole custom list. */
-  isDirty?: boolean;
-  isSaving?: boolean;
-  saveSection?: (section: EditableSection) => Promise<void>;
-  /** Extra controls at the start of the header's control group, e.g. moving or removing a custom section. */
+  /** Extra controls at the start of the header's control group: moving or removing the section in the page layout. */
   headerActions?: ReactNode;
   isCollapsed: boolean;
   canEdit: boolean;
@@ -58,7 +54,7 @@ type SectionEditorProps = {
 };
 
 export function SectionEditor({
-  section, title, description, isDirty = false, isSaving = false, saveSection, headerActions, isCollapsed, canEdit, collapsedItems, targetOptionsByType,
+  section, title, description, headerActions, isCollapsed, canEdit, collapsedItems, targetOptionsByType,
   toggleCollapsed, toggleCollapsedItem, setSection, addItem, moveItem, hasMissingTarget
 }: SectionEditorProps) {
   const isActive = section.status === "active";
@@ -89,14 +85,6 @@ export function SectionEditor({
                 />
                 {isActive ? "نشط" : "غير نشط"}
               </label>
-              {saveSection ? (
-                <>
-                  {isDirty ? <span className="text-xs font-medium text-warning">تغييرات غير محفوظة</span> : null}
-                  <Button variant="primary" size="sm" disabled={!isDirty || isSaving} onClick={() => { void saveSection(section); }}>
-                    {isSaving ? "جارٍ الحفظ…" : "حفظ القسم"}
-                  </Button>
-                </>
-              ) : null}
             </>
           ) : (
             <StatusBadge active={isActive} />

@@ -1,5 +1,5 @@
-import type { Advice, Category, Collection, Offer, Product, ProductAttribute, ShopCustomBlock, ShopMediaSection } from "@capella/shared";
-import { fetchAdvices, fetchBrands, fetchCategories, fetchCollections, fetchGenders, fetchOffers, fetchProducts, fetchShopCustomSections, fetchShopMediaSections } from "@/lib/api/client";
+import { SHOP_PAGE_DEFAULT_BLOCK_TYPES, type Advice, type Category, type Collection, type Offer, type Product, type ProductAttribute, type ShopPageBlock } from "@capella/shared";
+import { fetchAdvices, fetchBrands, fetchCategories, fetchCollections, fetchGenders, fetchOffers, fetchProducts, fetchShopLayout } from "@/lib/api/client";
 
 async function safeList<T>(load: () => Promise<T[]>): Promise<T[]> {
   try {
@@ -9,28 +9,42 @@ async function safeList<T>(load: () => Promise<T[]>): Promise<T[]> {
   }
 }
 
+/** The built-in sections in their usual order: what the shop page shows when its layout can't be loaded. */
+function defaultShopLayout(): ShopPageBlock[] {
+  return SHOP_PAGE_DEFAULT_BLOCK_TYPES.map((type, index) => ({ id: -(index + 1), type, categoryId: null, mediaSection: null, sortOrder: index + 1 }));
+}
+
+async function loadShopLayout(lang: string): Promise<ShopPageBlock[]> {
+  try {
+    return (await fetchShopLayout({ lang })) ?? defaultShopLayout();
+  } catch {
+    return defaultShopLayout();
+  }
+}
+
 export async function loadShopPageData(lang: string): Promise<{
   categories: Category[];
   brands: ProductAttribute[];
   genders: ProductAttribute[];
   advices: Advice[];
-  shopMediaSections: ShopMediaSection[];
   products: Product[];
   offers: Offer[];
-  customBlocks: ShopCustomBlock[];
+  collections: Collection[];
+  layout: ShopPageBlock[];
 }> {
-  const [categories, brands, genders, advices, shopMediaSections, products, offers, customBlocks] = await Promise.all([
+  const [categories, brands, genders, advices, products, offers, layout] = await Promise.all([
     safeList(() => fetchCategories({ lang })),
     safeList(() => fetchBrands({ lang })),
     safeList(() => fetchGenders({ lang })),
     safeList(() => fetchAdvices({ lang })),
-    safeList(() => fetchShopMediaSections({ lang })),
     safeList(() => fetchProducts({ lang })),
     safeList(() => fetchOffers({ lang })),
-    safeList(() => fetchShopCustomSections({ lang }))
+    loadShopLayout(lang)
   ]);
+  // Collections is not on the page unless the ERP added it, so it is only fetched then.
+  const collections = layout.some((block) => block.type === "collections") ? await safeList(() => fetchCollections({ lang })) : [];
 
-  return { categories, brands, genders, advices, shopMediaSections, products, offers, customBlocks };
+  return { categories, brands, genders, advices, products, offers, collections, layout };
 }
 
 /** The all categories page: every category; the page itself keeps the main ones that have a picture. */

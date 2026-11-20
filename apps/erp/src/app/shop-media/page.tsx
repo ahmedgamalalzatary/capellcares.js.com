@@ -8,58 +8,35 @@ import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { showErrorToast } from "@/lib/errors";
-import { moveItem as moveArrayItem } from "@/lib/array";
 import { getStore, useStore } from "@/lib/store";
 import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useCollapsedShopMedia } from "@/features/shop-media/hooks/use-collapsed-shop-media";
 import { useCollapsedShopMediaItems } from "@/features/shop-media/hooks/use-collapsed-shop-media-items";
 import { buildCategoryTreeOptions } from "@/lib/category-tree";
 import type { Announcement } from "@capella/shared";
-import type { EditableAnnouncement, EditableItem, EditableSection } from "@/features/shop-media/types";
-import {
-  findSectionError,
-  isDetailTargetType,
-  newEditableItem,
-  toEditableSection,
-  toSectionItemsPayload
-} from "@/features/shop-media/lib/editable-section";
+import type { EditableAnnouncement, EditableItem } from "@/features/shop-media/types";
+import { isDetailTargetType } from "@/features/shop-media/lib/editable-section";
 import { AnnouncementsEditor } from "@/features/shop-media/components/announcements-editor";
-import { CustomSectionsEditor } from "@/features/shop-media/components/custom-sections-editor";
-import { SectionEditor } from "@/features/shop-media/components/section-editor";
-
-/** The top banner is the only picture section with a fixed place; every other picture section lives in the custom sections tab. */
-const TOP_BANNER_KEY = "top";
+import { ShopLayoutEditor } from "@/features/shop-media/components/shop-layout-editor";
 
 export default function ShopMediaPage() {
   const { user } = useAdminAuth();
-  const shopMediaSections = useStore((store) => store.shopMediaSections);
-  const shopCustomBlocks = useStore((store) => store.shopCustomBlocks);
+  const shopPageBlocks = useStore((store) => store.shopPageBlocks);
   const storedAnnouncements = useStore((store) => store.announcements);
   const storedBarStatus = useStore((store) => store.announcementBarStatus);
   const products = useStore((store) => store.products);
   const categories = useStore((store) => store.categories);
   const offers = useStore((store) => store.offers);
   const collections = useStore((store) => store.collections);
-  const [topBanner, setTopBanner] = useState<EditableSection>(() => toEditableSection(undefined, TOP_BANNER_KEY));
-  const [tab, setTab] = useState<"images" | "custom" | "announcements">("images");
+  const [tab, setTab] = useState<"layout" | "announcements">("layout");
   const [announcementItems, setAnnouncementItems] = useState<EditableAnnouncement[]>([]);
   const [barStatus, setBarStatus] = useState<"active" | "inactive">("active");
-  const [savingTopBanner, setSavingTopBanner] = useState(false);
   const [savingAnnouncements, setSavingAnnouncements] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const topBannerDirtyRef = useRef(false);
-  const [topBannerDirty, setTopBannerDirty] = useState(false);
   const announcementsDirtyRef = useRef(false);
   const [announcementsDirty, setAnnouncementsDirty] = useState(false);
   const { collapsed: collapsedSections, toggle: toggleCollapsed } = useCollapsedShopMedia();
   const { collapsed: collapsedItems, toggle: toggleCollapsedItem } = useCollapsedShopMediaItems();
-
-  useEffect(() => {
-    if (topBannerDirtyRef.current) {
-      return;
-    }
-    setTopBanner(toEditableSection(shopMediaSections.find((section) => section.slot === 1), TOP_BANNER_KEY));
-  }, [shopMediaSections]);
 
   useEffect(() => {
     if (announcementsDirtyRef.current) {
@@ -95,44 +72,6 @@ export default function ShopMediaPage() {
     isDetailTargetType(item.targetType)
     && item.targetId !== null
     && !targetOptionsByType[item.targetType].some((option) => option.id === item.targetId);
-
-  const setSection = (_key: string, updater: (current: EditableSection) => EditableSection) => {
-    topBannerDirtyRef.current = true;
-    setTopBannerDirty(true);
-    setTopBanner(updater);
-  };
-
-  const saveSection = async (section: EditableSection) => {
-    const sectionError = findSectionError(section, hasMissingTarget);
-    if (sectionError) {
-      const validationError = new Error(sectionError);
-      setError(sectionError);
-      showErrorToast(validationError, sectionError);
-      return;
-    }
-    try {
-      setSavingTopBanner(true);
-      setError(null);
-      await getStore().updateShopMediaSection(1, {
-        status: section.status,
-        items: toSectionItemsPayload(section.items)
-      });
-      topBannerDirtyRef.current = false;
-      setTopBannerDirty(false);
-      toast.success("تم حفظ القسم بنجاح.");
-    } catch {
-      const saveError = new Error("تعذر حفظ القسم. حاولي مرة أخرى.");
-      setError(saveError.message);
-      showErrorToast(saveError, saveError.message);
-    } finally {
-      setSavingTopBanner(false);
-    }
-  };
-
-  const addItem = (key: string) => setSection(key, (current) => ({
-    ...current,
-    items: [...current.items, newEditableItem()]
-  }));
 
   const markAnnouncementsDirty = (updater: (current: EditableAnnouncement[]) => EditableAnnouncement[]) => {
     announcementsDirtyRef.current = true;
@@ -182,18 +121,8 @@ export default function ShopMediaPage() {
     }
   };
 
-  const moveItem = (key: string, itemId: string, direction: -1 | 1) => setSection(key, (current) => {
-    const index = current.items.findIndex((entry) => entry.id === itemId);
-    if (index === -1) {
-      return current;
-    }
-    const items = moveArrayItem(current.items, index, direction);
-    return items === current.items ? current : { ...current, items };
-  });
-
   const tabs = [
-    { value: "images", label: "أقسام الصور" },
-    { value: "custom", label: "الأقسام المخصصة" },
+    { value: "layout", label: "ترتيب صفحة المتجر" },
     { value: "announcements", label: "شريط الإعلانات" }
   ] as const;
 
@@ -201,7 +130,7 @@ export default function ShopMediaPage() {
     <AdminShell
       title="وسائط المتجر"
       crumbs={[{ label: "وسائط المتجر" }]}
-      description="صورة أعلى المتجر، والأقسام المخصصة، وشريط الإعلانات في واجهة المتجر."
+      description="ترتيب أقسام صفحة المتجر وصورها، وشريط الإعلانات."
     >
       <div className="grid gap-5">
         <div className="flex flex-wrap gap-2" role="tablist" aria-label="وسائط المتجر">
@@ -235,31 +164,10 @@ export default function ShopMediaPage() {
           />
         ) : null}
 
-        {tab === "images" ? (
-          <SectionEditor
-            section={topBanner}
-            title="صورة أعلى المتجر"
-            description="تظهر أعلى صفحة المتجر. باقي أقسام الصور في تبويب «الأقسام المخصصة»."
-            isDirty={topBannerDirty}
-            isSaving={savingTopBanner}
-            saveSection={saveSection}
-            isCollapsed={collapsedSections.has(topBanner.key)}
-            canEdit={canEdit}
-            collapsedItems={collapsedItems}
-            targetOptionsByType={targetOptionsByType}
-            toggleCollapsed={toggleCollapsed}
-            toggleCollapsedItem={toggleCollapsedItem}
-            setSection={setSection}
-            addItem={addItem}
-            moveItem={moveItem}
-            hasMissingTarget={hasMissingTarget}
-          />
-        ) : null}
-
-        {/* Kept mounted while hidden so unsaved custom-section edits survive switching tabs. */}
-        <div hidden={tab !== "custom"}>
-          <CustomSectionsEditor
-            storedBlocks={shopCustomBlocks ?? []}
+        {/* Kept mounted while hidden so unsaved layout edits survive switching tabs. */}
+        <div hidden={tab !== "layout"}>
+          <ShopLayoutEditor
+            storedBlocks={shopPageBlocks ?? []}
             categories={categories}
             canEdit={canEdit}
             targetOptionsByType={targetOptionsByType}

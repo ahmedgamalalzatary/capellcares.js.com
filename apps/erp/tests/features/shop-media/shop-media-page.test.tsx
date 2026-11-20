@@ -7,7 +7,16 @@ const { toastSuccess, showErrorToast } = vi.hoisted(() => ({
   showErrorToast: vi.fn()
 }));
 
-const updateShopMediaSection = vi.fn().mockResolvedValue(undefined);
+const replaceShopLayout = vi.fn().mockResolvedValue(undefined);
+
+/** A shop page of one picture section (the given one) followed by offers. */
+const layoutWith = (section: any) => [
+  { id: 1, type: "media", categoryId: null, mediaSection: section, sortOrder: 1 },
+  { id: 2, type: "offers", categoryId: null, mediaSection: null, sortOrder: 2 }
+];
+
+/** The picture section as the last layout save sent it. */
+const savedPictureSection = () => replaceShopLayout.mock.calls.at(-1)![0][0];
 const replaceAnnouncements = vi.fn().mockResolvedValue(undefined);
 const makeMockState = () => ({
   announcementBarStatus: "active" as const,
@@ -18,9 +27,8 @@ const makeMockState = () => ({
     status: "active" as const,
     sortOrder: 1
   }],
-  shopMediaSections: [{
+  shopPageBlocks: layoutWith({
     id: 1,
-    slot: 1,
     status: "active",
     items: [{
       id: 11,
@@ -32,7 +40,7 @@ const makeMockState = () => ({
       targetId: null,
       sortOrder: 1
     }]
-  }],
+  }),
   products: [],
   categories: [],
   offers: [],
@@ -65,7 +73,7 @@ vi.mock("@/components/forms/single-image-field", () => ({
 vi.mock("@/lib/store", () => ({
   useStore: (selector: any) => selector(mockState),
   getStore: () => ({
-    updateShopMediaSection,
+    replaceShopLayout,
     replaceAnnouncements
   })
 }));
@@ -94,20 +102,20 @@ describe("ShopMediaPage", () => {
     mockState = makeMockState();
   });
 
-  it("defaults to image sections and lists that tab before custom sections and announcements", () => {
+  it("opens on the shop page layout and lists that tab before announcements", () => {
     render(createElement(ShopMediaPage));
 
     const tabs = screen.getAllByRole("tab");
-    expect(tabs.map((tab) => tab.textContent)).toEqual(["أقسام الصور", "الأقسام المخصصة", "شريط الإعلانات"]);
-    expect(screen.getByRole("tab", { name: "أقسام الصور" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getAllByRole("button", { name: "حفظ القسم" }).length).toBeGreaterThan(0);
+    expect(tabs.map((tab) => tab.textContent)).toEqual(["ترتيب صفحة المتجر", "شريط الإعلانات"]);
+    expect(screen.getByRole("tab", { name: "ترتيب صفحة المتجر" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getAllByRole("button", { name: "حفظ الترتيب" }).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: "إضافة إعلان" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "شريط الإعلانات" }));
 
     expect(screen.getByRole("tab", { name: "شريط الإعلانات" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("button", { name: "إضافة إعلان" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "حفظ القسم" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "حفظ الترتيب" })).not.toBeInTheDocument();
   });
 
   it("saves a master announcement-bar visibility toggle separately from each quote", () => {
@@ -242,9 +250,9 @@ describe("ShopMediaPage", () => {
     ]) {
       fireEvent.click(screen.getByRole("button", { name: label }));
     }
-    fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
+    fireEvent.click(screen.getAllByRole("button", { name: "حفظ الترتيب" })[0]!);
 
-    expect(updateShopMediaSection).toHaveBeenCalledWith(1, expect.objectContaining({
+    expect(savedPictureSection()).toEqual(expect.objectContaining({
       items: [expect.objectContaining({
         arImagePath: "/uploads/changed-سطح المكتب — العربية.jpg",
         arMobileImagePath: "/uploads/changed-الموبايل — العربية.jpg",
@@ -263,9 +271,9 @@ describe("ShopMediaPage", () => {
     mockState = makeMockState();
     view.rerender(createElement(ShopMediaPage));
 
-    fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
+    fireEvent.click(screen.getAllByRole("button", { name: "حفظ الترتيب" })[0]!);
 
-    expect(updateShopMediaSection).toHaveBeenCalledWith(1, expect.objectContaining({
+    expect(savedPictureSection()).toEqual(expect.objectContaining({
       items: [expect.objectContaining({
         enImagePath: "/uploads/changed-سطح المكتب — الإنجليزية.jpg",
         enMobileImagePath: "/uploads/original-mobile.jpg"
@@ -279,9 +287,9 @@ describe("ShopMediaPage", () => {
 
     fireEvent.click(screen.getAllByText("سطح المكتب — الإنجليزية")[0]!);
     fireEvent.click(screen.getAllByText("الموبايل — الإنجليزية")[0]!);
-    fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
+    fireEvent.click(screen.getAllByRole("button", { name: "حفظ الترتيب" })[0]!);
 
-    expect(updateShopMediaSection).toHaveBeenCalledWith(1, expect.objectContaining({
+    expect(savedPictureSection()).toEqual(expect.objectContaining({
       status: "active",
       items: [expect.objectContaining({
         enImagePath: "/uploads/changed-سطح المكتب — الإنجليزية.jpg",
@@ -298,9 +306,9 @@ describe("ShopMediaPage", () => {
     fireEvent.change(screen.getByLabelText("نوع الوجهة"), {
       target: { value: "product" }
     });
-    fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
+    fireEvent.click(screen.getAllByRole("button", { name: "حفظ الترتيب" })[0]!);
 
-    expect(updateShopMediaSection).not.toHaveBeenCalled();
+    expect(replaceShopLayout).not.toHaveBeenCalled();
     await waitFor(() => {
       expect(showErrorToast).toHaveBeenCalledWith(expect.any(Error), "أضيفي صورة واحدة على الأقل وحددي الوجهة المطلوبة لكل عنصر قبل الحفظ.");
     });
@@ -309,9 +317,8 @@ describe("ShopMediaPage", () => {
   it("allows saving with only desktop image provided", () => {
     mockState = {
       ...makeMockState(),
-      shopMediaSections: [{
+      shopPageBlocks: layoutWith({
         id: 1,
-        slot: 1,
         status: "active",
         items: [{
           id: 11,
@@ -323,15 +330,15 @@ describe("ShopMediaPage", () => {
           targetId: null,
           sortOrder: 1
         }]
-      }]
+      })
     };
     render(createElement(ShopMediaPage));
 
 
     fireEvent.click(screen.getAllByRole("switch", { name: "تفعيل القسم" })[0]!);
-    fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
+    fireEvent.click(screen.getAllByRole("button", { name: "حفظ الترتيب" })[0]!);
 
-    expect(updateShopMediaSection).toHaveBeenCalledWith(1, expect.objectContaining({
+    expect(savedPictureSection()).toEqual(expect.objectContaining({
       items: [expect.objectContaining({
         enImagePath: "/uploads/desktop.jpg",
         enMobileImagePath: null
@@ -340,15 +347,15 @@ describe("ShopMediaPage", () => {
   });
 
   it("shows an error toast when saving fails", async () => {
-    updateShopMediaSection.mockRejectedValueOnce(new Error("save failed"));
+    replaceShopLayout.mockRejectedValueOnce(new Error("save failed"));
     render(createElement(ShopMediaPage));
 
 
     fireEvent.click(screen.getAllByText("سطح المكتب — الإنجليزية")[0]!);
-    fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
+    fireEvent.click(screen.getAllByRole("button", { name: "حفظ الترتيب" })[0]!);
 
     await waitFor(() => {
-      expect(showErrorToast).toHaveBeenCalledWith(expect.any(Error), "تعذر حفظ القسم. حاولي مرة أخرى.");
+      expect(showErrorToast).toHaveBeenCalledWith(expect.any(Error), "تعذر حفظ ترتيب صفحة المتجر. حاولي مرة أخرى.");
     });
   });
 
@@ -360,9 +367,9 @@ describe("ShopMediaPage", () => {
     expect(toggle).toBeChecked();
 
     fireEvent.click(toggle);
-    fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
+    fireEvent.click(screen.getAllByRole("button", { name: "حفظ الترتيب" })[0]!);
 
-    expect(updateShopMediaSection).toHaveBeenCalledWith(1, expect.objectContaining({
+    expect(savedPictureSection()).toEqual(expect.objectContaining({
       status: "inactive"
     }));
   });
@@ -370,9 +377,8 @@ describe("ShopMediaPage", () => {
   it("warns that a banner whose target was deleted now falls back to the home page", () => {
     mockState = {
       ...makeMockState(),
-      shopMediaSections: [{
+      shopPageBlocks: layoutWith({
         id: 1,
-        slot: 1,
         status: "active",
         items: [{
           id: 11,
@@ -384,7 +390,7 @@ describe("ShopMediaPage", () => {
           targetId: 2,
           sortOrder: 1
         }]
-      }],
+      }),
       products: [
         { id: 1, name: { ar: "منتج حي", en: "Live" } },
         { id: 2, name: { ar: "لوشن للجسم", en: "Body Lotion" }, deletedAt: "2026-01-01T00:00:00.000Z" }
@@ -400,9 +406,8 @@ describe("ShopMediaPage", () => {
   it("blocks saving a section whose target was deleted, with a specific reason", async () => {
     mockState = {
       ...makeMockState(),
-      shopMediaSections: [{
+      shopPageBlocks: layoutWith({
         id: 1,
-        slot: 1,
         status: "active",
         items: [{
           id: 11,
@@ -414,7 +419,7 @@ describe("ShopMediaPage", () => {
           targetId: 2,
           sortOrder: 1
         }]
-      }],
+      }),
       products: [{ id: 2, name: { ar: "لوشن للجسم", en: "Body Lotion" }, deletedAt: "2026-01-01T00:00:00.000Z" }]
     };
 
@@ -422,9 +427,9 @@ describe("ShopMediaPage", () => {
 
 
     fireEvent.click(screen.getAllByText("الموبايل — الإنجليزية")[0]!);
-    fireEvent.click(screen.getAllByRole("button", { name: "حفظ القسم" })[0]!);
+    fireEvent.click(screen.getAllByRole("button", { name: "حفظ الترتيب" })[0]!);
 
-    expect(updateShopMediaSection).not.toHaveBeenCalled();
+    expect(replaceShopLayout).not.toHaveBeenCalled();
     await waitFor(() => {
       expect(showErrorToast).toHaveBeenCalledWith(
         expect.any(Error),
@@ -436,16 +441,15 @@ describe("ShopMediaPage", () => {
   it("never offers soft-deleted products, offers, or collections as targets", () => {
     mockState = {
       ...makeMockState(),
-      shopMediaSections: [{
+      shopPageBlocks: layoutWith({
         id: 1,
-        slot: 1,
         status: "active",
         items: [
           { id: 11, arImagePath: null, arMobileImagePath: null, enImagePath: "/uploads/a.jpg", enMobileImagePath: null, targetType: "product", targetId: 1, sortOrder: 1 },
           { id: 12, arImagePath: null, arMobileImagePath: null, enImagePath: "/uploads/b.jpg", enMobileImagePath: null, targetType: "offer", targetId: 1, sortOrder: 2 },
           { id: 13, arImagePath: null, arMobileImagePath: null, enImagePath: "/uploads/c.jpg", enMobileImagePath: null, targetType: "collection", targetId: 1, sortOrder: 3 }
         ]
-      }],
+      }),
       products: [
         { id: 1, name: { ar: "منتج حي", en: "Live" } },
         { id: 2, name: { ar: "منتج محذوف", en: "Deleted" }, deletedAt: "2026-01-01T00:00:00.000Z" }
@@ -475,9 +479,8 @@ describe("ShopMediaPage", () => {
   it("lists category targets in the same tree order as the products filter", () => {
     mockState = {
       ...makeMockState(),
-      shopMediaSections: [{
+      shopPageBlocks: layoutWith({
         id: 1,
-        slot: 1,
         status: "active",
         items: [{
           id: 11,
@@ -489,7 +492,7 @@ describe("ShopMediaPage", () => {
           targetId: 2,
           sortOrder: 1
         }]
-      }],
+      }),
       categories: [
         { id: 3, parentId: 1, slug: "body-oil", name: { ar: "Body Oil", en: "Body Oil" }, isLeaf: true, sortOrder: 2 },
         { id: 1, parentId: null, slug: "body", name: { ar: "Body", en: "Body" }, isLeaf: false, sortOrder: 1 },

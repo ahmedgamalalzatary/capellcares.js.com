@@ -29,7 +29,6 @@ export const shopMediaSectionItemSchema = z.object({
 
 export const shopMediaSectionSchema = z.object({
   id: z.number().int().positive(),
-  slot: z.literal(1).nullable(),
   status: z.enum(["active", "inactive"]),
   items: z.array(shopMediaSectionItemSchema),
   createdAt: z.string().optional(),

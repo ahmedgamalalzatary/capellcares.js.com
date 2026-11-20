@@ -187,13 +187,14 @@ describe("ERP store", () => {
           }]
         };
       }
-      if (path === "/api/erp/shop-media-sections") {
+      if (path === "/api/erp/shop-layout") {
         return {
-          items: [{
-            id: 1,
-            slot: 1,
-            status: "active",
-            items: [{
+          items: [{ id: 1, type: "genders", categoryId: null, mediaSection: null, sortOrder: 1 }, {
+            id: 2,
+            type: "media",
+            categoryId: null,
+            sortOrder: 2,
+            mediaSection: { id: 1, status: "active", items: [{
               id: 10,
               arImagePath: null,
               arMobileImagePath: null,
@@ -202,8 +203,8 @@ describe("ERP store", () => {
               targetType: "offers",
               targetId: null,
               sortOrder: 1
-            }]
-          }]
+            }] }
+          }, { id: 3, type: "category", categoryId: 7, mediaSection: null, sortOrder: 3 }]
         };
       }
       if (path === "/api/erp/sales") {
@@ -217,27 +218,8 @@ describe("ERP store", () => {
 
     await store.refetch();
 
-    expect((store as any).shopMediaSections).toHaveLength(1);
+    expect(store.shopPageBlocks.map((block) => block.type)).toEqual(["genders", "media", "category"]);
     expect((store as any).announcements).toHaveLength(1);
-  });
-
-  it("hydrates the shop's custom sections during refetch", async () => {
-    apiGet.mockImplementation(async (path: string) => {
-      if (path === "/api/erp/shop-custom-sections") {
-        return { items: [{ id: 3, type: "category", categoryId: 7, mediaSection: null, sortOrder: 1 }] };
-      }
-      if (path === "/api/erp/sales") {
-        return { summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] };
-      }
-      return { items: [] };
-    });
-
-    const { getStore } = await import("@/lib/store");
-    const store = getStore();
-
-    await store.refetch();
-
-    expect(store.shopCustomBlocks).toEqual([{ id: 3, type: "category", categoryId: 7, mediaSection: null, sortOrder: 1 }]);
   });
 
   it("hydrates collections during refetch", async () => {
@@ -448,7 +430,7 @@ describe("ERP store", () => {
 
     expect(store.products).toHaveLength(1);
     expect(store.error).toBeNull();
-    expect(apiGet).toHaveBeenCalledTimes(13);
+    expect(apiGet).toHaveBeenCalledTimes(12);
   });
 
   it("preloads only datasets allowed by the current staff permissions", async () => {

@@ -84,7 +84,7 @@ Storefront routes (`/api/v1`, locale middleware + feature-compatibility gate app
 - `/checkout` — submit, shipping availability, shipping quote, status polling, retry
 - `/payments/paymob` — provider callbacks
 - `/reviews` — list, submit, prompt claim
-- `/advices`, `/announcements`, `/shop-media-sections`
+- `/advices`, `/announcements`, `/shop-layout` (the shop page's sections in order), `/shop-media-sections` (its live picture sections, in page order)
 
 ERP routes (`/api/erp`):
 - `/auth` — staff login/refresh/logout (public).
@@ -184,7 +184,7 @@ Confirmed routes:
 
 Route behavior:
 - `/` redirects to `/[defaultLanguage]`, which redirects to `/[lang]/shop`.
-- `/[lang]/shop` is the storefront home: product listings plus curated offer/collection cards, shop media sections, and advice content.
+- `/[lang]/shop` is the storefront home: its sections between the header and Falta & Zoobi follow the layout set in the ERP (see Shop page layout); Falta & Zoobi closes the page.
 - `/[lang]/products` is the full all-products listing with filters, sorting, and search.
 - `/[lang]/category/[slug]` shows a category-filtered product listing including descendant products.
 - `/[lang]/search` is the query-driven listing.
@@ -555,8 +555,16 @@ Announcements:
 - Managed in ERP and rendered at the top of the storefront.
 
 Shop media:
-- Ordered, on/off media sections ("slots") with per-item bilingual desktop and mobile images and a target (shop, new, bestsellers, products, a specific product, offers, a specific offer, collections, a specific collection, or a category).
-- Managed in ERP and rendered on the corresponding storefront pages.
+- Picture sections, each on/off, with per-item bilingual desktop and mobile images and a target (shop, new, bestsellers, products, a specific product, offers, a specific offer, collections, a specific collection, or a category).
+- A picture section has no fixed slot: its place is its row in the shop page layout.
+
+Shop page layout:
+- The shop page from under the header down to Falta & Zoobi is one ordered list (`shop_page_blocks`), edited in ERP → Shop media → Page layout and saved as a whole (`GET`/`PUT /api/erp/shop-layout`, `shop_media.*` permissions). The announcement bar, header and Falta & Zoobi stay fixed.
+- A section is a built-in one (shop by gender, categories, bestsellers, new, offers, brands, collections; each at most once), a category section, or a picture section (any number, anywhere). Collections is not on the page by default: the ERP offers it as "Add «Collections»", and the storefront fetches collections only when it is on the page.
+- A category section shows the newest 12 live products of the category and every category beneath it, titled with the category's name and linking to its category page; each category at most once. It is hidden when it has no products or the category is in the trash (the ERP flags a trashed one and blocks saving until it is changed or removed).
+- No on/off switch: a removed built-in section can be added back. The page keeps at least one section.
+- A shop that never set its layout shows the built-in sections in their usual order; the migration (0077) carried over the earlier page: top banner, genders, categories, bestsellers, the custom sections in their order, new, offers, brands. Migration 0078 then dropped the old `shop_custom_blocks` table.
+- The first picture section on the page loads its image first.
 
 Recipes:
 - Keep empty for now.

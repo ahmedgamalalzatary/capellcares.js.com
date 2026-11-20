@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, Images, LayoutList, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Images, LayoutList, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import type { Category, ShopCustomBlock } from "@capella/shared";
+import { SHOP_PAGE_BUILT_IN_BLOCK_TYPES, type Category, type ShopPageBlock, type ShopPageBuiltInBlockType } from "@capella/shared";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import { moveItem as moveArrayItem } from "@/lib/array";
 import { buildCategoryTreeOptions, type CategoryTreeOption } from "@/lib/category-tree";
 import { showErrorToast } from "@/lib/errors";
 import { getStore } from "@/lib/store";
+import type { ShopPageBlockPayload } from "@/lib/store/types";
 import { SectionEditor } from "@/features/shop-media/components/section-editor";
 import {
   findSectionError,
@@ -20,22 +21,44 @@ import {
   toEditableSection,
   toSectionItemsPayload
 } from "@/features/shop-media/lib/editable-section";
-import type { EditableCustomBlock, EditableItem, EditableSection } from "@/features/shop-media/types";
+import type { EditableItem, EditableSection, EditableShopBlock } from "@/features/shop-media/types";
 
 const MISSING_CATEGORY_MESSAGE = "اختاري قسمًا لكل قسم منتجات قبل الحفظ.";
 const TRASHED_CATEGORY_MESSAGE = "أحد الأقسام المختارة محذوف. اختاري قسمًا آخر أو أزيلي القسم قبل الحفظ.";
+const EMPTY_PAGE_MESSAGE = "أبقي قسمًا واحدًا على الأقل في صفحة المتجر.";
 
-function toEditableBlocks(blocks: ShopCustomBlock[]): EditableCustomBlock[] {
-  return blocks.map((block) => (
-    block.type === "category"
-      ? { key: `block-${block.id}`, type: "category", categoryId: block.categoryId }
-      : {
-        key: `block-${block.id}`,
-        type: "media",
-        mediaSectionId: block.mediaSection.id,
-        section: toEditableSection(block.mediaSection, `custom-${block.mediaSection.id}`)
-      }
-  ));
+/** How each built-in section is named and described in the layout. */
+const BUILT_IN_SECTIONS: Record<ShopPageBuiltInBlockType, { title: string; description: string }> = {
+  genders: { title: "تسوق حسب النوع", description: "صور الأنواع (أولاد، بنات، …) في صف واحد." },
+  category_tiles: { title: "الأقسام", description: "الأقسام الرئيسية التي فيها منتجات، مع «عرض الكل»." },
+  bestsellers: { title: "الأكثر مبيعًا", description: "المنتجات المعلّمة «الأكثر مبيعًا» مع «عرض الكل»." },
+  new: { title: "الأحدث", description: "المنتجات المعلّمة «جديد» مع «عرض الكل»." },
+  offers: { title: "العروض", description: "العروض النشطة في صف واحد مع «عرض الكل»." },
+  brands: { title: "الماركات", description: "شعارات الماركات التي فيها منتجات، مع «عرض الكل»." },
+  collections: { title: "المجموعات", description: "المجموعات النشطة الظاهرة في صف واحد مع «عرض الكل»." }
+};
+
+function isBuiltIn(block: EditableShopBlock): block is { key: string; type: ShopPageBuiltInBlockType } {
+  return block.type !== "category" && block.type !== "media";
+}
+
+function toEditableBlocks(blocks: ShopPageBlock[]): EditableShopBlock[] {
+  return blocks.map((block): EditableShopBlock => {
+    const key = `block-${block.id}`;
+    if (block.type === "category") return { key, type: "category", categoryId: block.categoryId };
+    if (block.type === "media") {
+      return { key, type: "media", mediaSectionId: block.mediaSection.id, section: toEditableSection(block.mediaSection, `section-${block.mediaSection.id}`) };
+    }
+    return { key, type: block.type };
+  });
+}
+
+function toPayload(block: EditableShopBlock): ShopPageBlockPayload {
+  if (block.type === "category") return { type: "category", categoryId: block.categoryId! };
+  if (block.type === "media") {
+    return { type: "media", mediaSectionId: block.mediaSectionId, status: block.section.status, items: toSectionItemsPayload(block.section.items) };
+  }
+  return { type: block.type };
 }
 
 function BlockActions({ index, count, onMove, onRemove }: { index: number; count: number; onMove: (delta: -1 | 1) => void; onRemove: () => void }) {
@@ -54,8 +77,8 @@ function BlockActions({ index, count, onMove, onRemove }: { index: number; count
   );
 }
 
-type CustomSectionsEditorProps = {
-  storedBlocks: ShopCustomBlock[];
+type ShopLayoutEditorProps = {
+  storedBlocks: ShopPageBlock[];
   categories: Category[];
   canEdit: boolean;
   targetOptionsByType: Record<"product" | "offer" | "collection" | "category", CategoryTreeOption[]>;
@@ -66,12 +89,15 @@ type CustomSectionsEditorProps = {
   toggleCollapsedItem: (key: string) => void;
 };
 
-/** The shop page's custom sections: an ordered list of category product rows and picture sections, shown between bestsellers and new arrivals. The whole list is saved at once. */
-export function CustomSectionsEditor({
+/**
+ * The shop page from just under the header down to Falta & Zoobi, in the order it shows: built-in sections (each at most
+ * once), category product rows and picture sections. Moving, removing and adding are all saved together with one button.
+ */
+export function ShopLayoutEditor({
   storedBlocks, categories, canEdit, targetOptionsByType, hasMissingTarget,
   collapsedSections, toggleCollapsedSection, collapsedItems, toggleCollapsedItem
-}: CustomSectionsEditorProps) {
-  const [blocks, setBlocks] = useState<EditableCustomBlock[]>(() => toEditableBlocks(storedBlocks));
+}: ShopLayoutEditorProps) {
+  const [blocks, setBlocks] = useState<EditableShopBlock[]>(() => toEditableBlocks(storedBlocks));
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,9 +111,10 @@ export function CustomSectionsEditor({
 
   const categoryOptions = useMemo(() => buildCategoryTreeOptions(categories), [categories]);
   const liveCategoryIds = useMemo(() => new Set(categoryOptions.map((option) => option.id)), [categoryOptions]);
-  const isTrashedCategory = (block: EditableCustomBlock) => block.type === "category" && block.categoryId != null && !liveCategoryIds.has(block.categoryId);
+  const isTrashedCategory = (block: EditableShopBlock) => block.type === "category" && block.categoryId != null && !liveCategoryIds.has(block.categoryId);
+  const missingBuiltIns = SHOP_PAGE_BUILT_IN_BLOCK_TYPES.filter((type) => !blocks.some((block) => block.type === type));
 
-  const update = (updater: (current: EditableCustomBlock[]) => EditableCustomBlock[]) => {
+  const update = (updater: (current: EditableShopBlock[]) => EditableShopBlock[]) => {
     setDirty(true);
     setBlocks(updater);
   };
@@ -96,8 +123,8 @@ export function CustomSectionsEditor({
     block.type === "media" && block.section.key === key ? { ...block, section: updater(block.section) } : block
   )));
 
+  const addBuiltIn = (type: ShopPageBuiltInBlockType) => update((current) => [...current, { key: `new-${crypto.randomUUID()}`, type }]);
   const addCategoryBlock = () => update((current) => [...current, { key: `new-${crypto.randomUUID()}`, type: "category", categoryId: null }]);
-
   const addMediaBlock = () => update((current) => {
     const key = `new-${crypto.randomUUID()}`;
     return [...current, { key, type: "media", mediaSectionId: null, section: { key, status: "active", items: [] } }];
@@ -107,12 +134,15 @@ export function CustomSectionsEditor({
   const removeBlock = (key: string) => update((current) => current.filter((block) => block.key !== key));
 
   const fail = (message: string) => {
-    const failure = new Error(message);
     setError(message);
-    showErrorToast(failure, message);
+    showErrorToast(new Error(message), message);
   };
 
   const save = async () => {
+    if (blocks.length === 0) {
+      fail(EMPTY_PAGE_MESSAGE);
+      return;
+    }
     if (blocks.some((block) => block.type === "category" && block.categoryId == null)) {
       fail(MISSING_CATEGORY_MESSAGE);
       return;
@@ -132,20 +162,11 @@ export function CustomSectionsEditor({
     try {
       setSaving(true);
       setError(null);
-      await getStore().replaceShopCustomSections(blocks.map((block) => (
-        block.type === "category"
-          ? { type: "category" as const, categoryId: block.categoryId! }
-          : {
-            type: "media" as const,
-            mediaSectionId: block.mediaSectionId,
-            status: block.section.status,
-            items: toSectionItemsPayload(block.section.items)
-          }
-      )));
+      await getStore().replaceShopLayout(blocks.map(toPayload));
       setDirty(false);
-      toast.success("تم حفظ الأقسام المخصصة بنجاح.");
+      toast.success("تم حفظ ترتيب صفحة المتجر.");
     } catch {
-      fail("تعذر حفظ الأقسام المخصصة. حاولي مرة أخرى.");
+      fail("تعذر حفظ ترتيب صفحة المتجر. حاولي مرة أخرى.");
     } finally {
       setSaving(false);
     }
@@ -156,28 +177,39 @@ export function CustomSectionsEditor({
       <Card>
         <header className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 pb-4 sm:px-6">
           <div className="min-w-0">
-            <h2 className="text-md font-bold">الأقسام المخصصة</h2>
-            <p className="text-sm text-text-muted">تظهر في صفحة المتجر بين «الأكثر مبيعًا» و«وصل حديثًا» بهذا الترتيب. قسم المنتجات يعرض أحدث ١٢ منتجًا من القسم وكل ما تحته.</p>
+            <h2 className="text-md font-bold">ترتيب صفحة المتجر</h2>
+            <p className="text-sm text-text-muted">
+              الأقسام من أسفل القائمة حتى «فلتة وزوبي»، بنفس الترتيب الذي تظهر به في المتجر. شريط الإعلانات والقائمة و«فلتة وزوبي» ثابتة في أماكنها. قسم المنتجات يعرض أحدث ١٢ منتجًا من القسم وكل ما تحته.
+            </p>
           </div>
           {canEdit ? (
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="secondary" size="sm" onClick={addCategoryBlock}>
-                <LayoutList /> إضافة قسم منتجات
-              </Button>
-              <Button variant="secondary" size="sm" onClick={addMediaBlock}>
-                <Images /> إضافة قسم صور
-              </Button>
               {dirty ? <span className="text-xs font-medium text-warning">تغييرات غير محفوظة</span> : null}
               <Button variant="primary" size="sm" disabled={!dirty || saving} onClick={() => { void save(); }}>
-                {saving ? "جارٍ الحفظ…" : "حفظ الأقسام"}
+                {saving ? "جارٍ الحفظ…" : "حفظ الترتيب"}
               </Button>
             </div>
           ) : null}
         </header>
+        {canEdit ? (
+          <CardBody className="flex flex-wrap gap-2">
+            <Button variant="secondary" size="sm" onClick={addMediaBlock}>
+              <Images /> إضافة قسم صور
+            </Button>
+            <Button variant="secondary" size="sm" onClick={addCategoryBlock}>
+              <LayoutList /> إضافة قسم منتجات
+            </Button>
+            {missingBuiltIns.map((type) => (
+              <Button key={type} variant="secondary" size="sm" onClick={() => addBuiltIn(type)}>
+                <Plus /> {`إضافة «${BUILT_IN_SECTIONS[type].title}»`}
+              </Button>
+            ))}
+          </CardBody>
+        ) : null}
         {blocks.length === 0 ? (
           <CardBody>
             <p className="rounded-well border border-dashed border-line-strong bg-sunken px-6 py-8 text-center text-sm text-text-muted">
-              لا توجد أقسام مخصصة بعد.
+              لا توجد أقسام في صفحة المتجر.
             </p>
           </CardBody>
         ) : null}
@@ -192,11 +224,11 @@ export function CustomSectionsEditor({
 
             if (block.type === "media") {
               return (
-                <li key={block.key} data-custom-section>
+                <li key={block.key} data-shop-section>
                   <SectionEditor
                     section={block.section}
                     title={`${index + 1}. قسم صور`}
-                    description="صور تظهر بين الأقسام المخصصة بنفس شكل صور المتجر."
+                    description="صور بعرض الصفحة. أول قسم صور في الصفحة يُحمَّل أولًا."
                     headerActions={actions}
                     isCollapsed={collapsedSections.has(block.section.key)}
                     canEdit={canEdit}
@@ -218,20 +250,37 @@ export function CustomSectionsEditor({
               );
             }
 
+            if (isBuiltIn(block)) {
+              const { title, description } = BUILT_IN_SECTIONS[block.type];
+              return (
+                <li key={block.key} data-shop-section>
+                  <Card>
+                    <header className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
+                      <div className="min-w-0">
+                        <h2 className="text-md font-bold">{`${index + 1}. ${title}`}</h2>
+                        <p className="text-sm text-text-muted">{description}</p>
+                      </div>
+                      {actions}
+                    </header>
+                  </Card>
+                </li>
+              );
+            }
+
             // Each category may lead only one section, so categories already used elsewhere are left out of this picker.
             const usedElsewhere = new Set(blocks.flatMap((other) => (
               other.key !== block.key && other.type === "category" && other.categoryId != null ? [other.categoryId] : []
             )));
             const options = categoryOptions.filter((option) => !usedElsewhere.has(option.id));
-            const selectId = `custom-category-${block.key}`;
+            const selectId = `shop-category-${block.key}`;
 
             return (
-              <li key={block.key} data-custom-section>
+              <li key={block.key} data-shop-section>
                 <Card>
                   <header className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 pb-4 sm:px-6">
                     <div className="min-w-0">
                       <h2 className="text-md font-bold">{`${index + 1}. قسم منتجات`}</h2>
-                      <p className="text-sm text-text-muted">صف من أحدث منتجات القسم مع رابط «عرض الكل».</p>
+                      <p className="text-sm text-text-muted">صف من أحدث منتجات القسم وكل ما تحته، مع رابط «عرض الكل».</p>
                     </div>
                     {actions}
                   </header>

@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminOrderDto, Advice, Announcement, Category, Collection, Offer, Product, ProductAttribute, ShopCustomBlock, ShopMediaSection, Supplier } from "@capella/shared";
+import type { AdminOrderDto, Advice, Announcement, Category, Collection, Offer, Product, ProductAttribute, ShopPageBlock, Supplier } from "@capella/shared";
 import {
   api,
   getAdminAuthUser,
@@ -20,19 +20,9 @@ import type {
   ErpStoreSnapshot,
   Listener,
   ProductApiShape,
-  SalesAnalytics
+  SalesAnalytics,
+  ShopPageBlockPayload
 } from "./types";
-
-/** One image of a picture section, as the API takes it. */
-type ShopMediaItemInput = {
-  arImagePath: string | null;
-  arMobileImagePath: string | null;
-  enImagePath: string | null;
-  enMobileImagePath: string | null;
-  targetType: string;
-  targetId: number | null;
-  sortOrder: number;
-};
 
 /** Focus/visibility refetches are skipped while the last load is younger than this. */
 const FOCUS_REFRESH_MIN_AGE_MS = 60_000;
@@ -59,8 +49,7 @@ export class ErpStore {
   collections: Collection[] = [];
   offers: Offer[] = [];
   advices: Advice[] = [];
-  shopMediaSections: ShopMediaSection[] = [];
-  shopCustomBlocks: ShopCustomBlock[] = [];
+  shopPageBlocks: ShopPageBlock[] = [];
   announcements: Announcement[] = [];
   announcementBarStatus: "active" | "inactive" = "active";
   sales: SalesAnalytics = this.createEmptySales();
@@ -92,8 +81,7 @@ export class ErpStore {
       collections: this.collections,
       offers: this.offers,
       advices: this.advices,
-      shopMediaSections: this.shopMediaSections,
-      shopCustomBlocks: this.shopCustomBlocks,
+      shopPageBlocks: this.shopPageBlocks,
       announcements: this.announcements,
       announcementBarStatus: this.announcementBarStatus,
       sales: this.sales,
@@ -126,8 +114,7 @@ export class ErpStore {
     this.collections = [];
     this.offers = [];
     this.advices = [];
-    this.shopMediaSections = [];
-    this.shopCustomBlocks = [];
+    this.shopPageBlocks = [];
     this.announcements = [];
     this.announcementBarStatus = "active";
     this.sales = this.createEmptySales();
@@ -300,15 +287,9 @@ export class ErpStore {
         }
       },
       canRead("shop_media.read") && {
-        load: () => api.get<{ items: ShopMediaSection[] }>("/api/erp/shop-media-sections"),
-        assign: (result: { items: ShopMediaSection[] }, store: ErpStore) => {
-          store.shopMediaSections = result.items;
-        }
-      },
-      canRead("shop_media.read") && {
-        load: () => api.get<{ items: ShopCustomBlock[] }>("/api/erp/shop-custom-sections"),
-        assign: (result: { items: ShopCustomBlock[] }, store: ErpStore) => {
-          store.shopCustomBlocks = result.items;
+        load: () => api.get<{ items: ShopPageBlock[] }>("/api/erp/shop-layout"),
+        assign: (result: { items: ShopPageBlock[] }, store: ErpStore) => {
+          store.shopPageBlocks = result.items;
         }
       },
       canRead("shop_media.read") && {
@@ -493,21 +474,9 @@ export class ErpStore {
     await this.mutate(() => api.del(`/api/erp/advices/${id}`));
   }
 
-  async updateShopMediaSection(
-    slot: 1,
-    input: { status: "active" | "inactive"; items: ShopMediaItemInput[] }
-  ) {
-    await this.mutate(() => api.post(`/api/erp/shop-media-sections/${slot}`, input));
-  }
-
-  /** Saves the shop page's whole custom sections list, in order. A picture section without an id is created; one left out is deleted. */
-  async replaceShopCustomSections(
-    blocks: Array<
-      | { type: "category"; categoryId: number }
-      | { type: "media"; mediaSectionId: number | null; status: "active" | "inactive"; items: ShopMediaItemInput[] }
-    >
-  ) {
-    await this.mutate(() => api.put("/api/erp/shop-custom-sections", { blocks }));
+  /** Saves the whole shop page layout at once, in the given order. A picture section without an id is created; one left out is deleted. */
+  async replaceShopLayout(blocks: ShopPageBlockPayload[]) {
+    await this.mutate(() => api.put("/api/erp/shop-layout", { blocks }));
   }
 
   async replaceAnnouncements(input: {

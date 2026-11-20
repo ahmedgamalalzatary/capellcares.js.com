@@ -20,7 +20,7 @@ import {
   reviewPromptStates,
   reviewSubmissionHistory,
   reviews,
-  shopCustomBlocks,
+  shopPageBlocks,
   shopMediaSectionItems,
   shopMediaSections,
   wishlists
@@ -44,7 +44,7 @@ export async function resetApiTestDatabase() {
   await db.delete(adminUserPermissions);
   await db.delete(adminUsers);
   await db.delete(permissions);
-  await db.delete(shopCustomBlocks);
+  await db.delete(shopPageBlocks);
   await db.delete(shopMediaSectionItems);
   await db.delete(shopMediaSections);
   await clearTestSeed();

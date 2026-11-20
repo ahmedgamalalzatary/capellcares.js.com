@@ -1,6 +1,6 @@
-import { render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { createElement } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
@@ -39,6 +39,7 @@ vi.mock("@capella/shared", async () => {
         newProducts: "New arrivals"
       },
       offers: { title: "Offers" },
+      collections: { title: "Sets" },
       common: { previous: "Previous", next: "Next" },
       shopMedia: {
         sectionLabel: "Featured media"
@@ -64,10 +65,9 @@ vi.mock("@/lib/storefront-page-context", () => ({
   resolveStorefrontLang: async () => "en"
 }));
 
-function mediaSection(id: number, slot: 1 | null, image: string) {
+function mediaSection(id: number, image: string) {
   return {
     id,
-    slot,
     status: "active",
     items: [
       {
@@ -99,6 +99,27 @@ function product(id: number, name: string, categoryId: number, extra: Record<str
   };
 }
 
+type Block = { id: number; type: string; categoryId: number | null; mediaSection: ReturnType<typeof mediaSection> | null; sortOrder: number };
+const builtIn = (id: number, type: string): Block => ({ id, type, categoryId: null, mediaSection: null, sortOrder: id });
+const categoryBlock = (id: number, categoryId: number): Block => ({ id, type: "category", categoryId, mediaSection: null, sortOrder: id });
+const mediaBlock = (id: number, section: ReturnType<typeof mediaSection>): Block => ({ id, type: "media", categoryId: null, mediaSection: section, sortOrder: id });
+
+/** Today's Falta page: banner, genders, categories, bestsellers, the category and picture sections, new, offers, brands. */
+const DEFAULT_LAYOUT: Block[] = [
+  mediaBlock(1, mediaSection(10, "top")),
+  builtIn(2, "genders"),
+  builtIn(3, "category_tiles"),
+  builtIn(4, "bestsellers"),
+  categoryBlock(5, 1),
+  mediaBlock(6, mediaSection(11, "custom")),
+  categoryBlock(7, 3),
+  categoryBlock(8, 4),
+  builtIn(9, "new"),
+  builtIn(10, "offers"),
+  builtIn(11, "brands")
+];
+const page = vi.hoisted(() => ({ layout: [] as unknown[] }));
+
 vi.mock("@/lib/storefront-static-data", () => ({
   loadShopPageData: async () => ({
     categories: [
@@ -116,7 +137,6 @@ vi.mock("@/lib/storefront-static-data", () => ({
       { id: 2, slug: "baby", name: { ar: "بيبي", en: "Baby" }, imagePath: "/uploads/baby.png", hasProducts: false }
     ],
     advices: [],
-    shopMediaSections: [mediaSection(10, 1, "top")],
     products: [
       product(1, "Brick Tower", 2, { isBestseller: true }),
       product(2, "Big Doll", 4, { isNew: true }),
@@ -126,12 +146,11 @@ vi.mock("@/lib/storefront-static-data", () => ({
       { id: 1, slug: "summer", name: { ar: "صيف", en: "Summer deal" }, status: "active", deletedAt: null, categoryId: null },
       { id: 2, slug: "gone", name: { ar: "قديم", en: "Gone deal" }, status: "inactive", deletedAt: null, categoryId: null }
     ],
-    customBlocks: [
-      { id: 1, type: "category", categoryId: 1, mediaSection: null, sortOrder: 1 },
-      { id: 2, type: "media", categoryId: null, mediaSection: mediaSection(11, null, "custom"), sortOrder: 2 },
-      { id: 3, type: "category", categoryId: 3, mediaSection: null, sortOrder: 3 },
-      { id: 4, type: "category", categoryId: 4, mediaSection: null, sortOrder: 4 }
-    ]
+    collections: [
+      { id: 1, slug: "starter", name: { ar: "بداية", en: "Starter set" }, status: "active", visibility: "visible", deletedAt: null, categoryId: 4 },
+      { id: 2, slug: "hidden", name: { ar: "مخفي", en: "Hidden set" }, status: "active", visibility: "hidden", deletedAt: null, categoryId: 4 }
+    ],
+    layout: page.layout
   })
 }));
 
@@ -143,7 +162,11 @@ async function renderShop() {
 }
 
 describe("shop page", () => {
-  it("shows the sections in the agreed order, with the custom sections between bestsellers and new", async () => {
+  beforeEach(() => {
+    page.layout = DEFAULT_LAYOUT;
+  });
+
+  it("shows the sections in the saved order, ending with Falta & Zoobi", async () => {
     const { container } = await renderShop();
     const order = Array.from(container.querySelectorAll("h2, [data-viewport]")).map((el) =>
       el.tagName === "H2" ? el.textContent : "image"
@@ -155,7 +178,46 @@ describe("shop page", () => {
     ]);
   });
 
-  it("fills a custom section with products from its category and everything beneath it", async () => {
+  it("has no sets section until the ERP adds it, then shows the visible sets with a view all link", async () => {
+    await renderShop();
+    expect(screen.queryByRole("heading", { name: "Sets" })).toBeNull();
+    cleanup();
+
+    page.layout = [builtIn(1, "new"), builtIn(2, "collections")];
+    await renderShop();
+    const sets = screen.getByRole("heading", { name: "Sets" }).closest("section")!;
+    expect(within(sets).getByText("Starter set")).toBeInTheDocument();
+    expect(within(sets).queryByText("Hidden set")).toBeNull();
+    expect(within(sets).getByRole("link", { name: "View all" })).toHaveAttribute("href", "/en/collections");
+  });
+
+  it("follows a different saved order, and leaves out the sections that were removed", async () => {
+    page.layout = [
+      builtIn(1, "offers"),
+      categoryBlock(2, 4),
+      builtIn(3, "brands"),
+      mediaBlock(4, mediaSection(12, "lower")),
+      builtIn(5, "new")
+    ];
+    const { container } = await renderShop();
+    const order = Array.from(container.querySelectorAll("h2, [data-viewport]")).map((el) =>
+      el.tagName === "H2" ? el.textContent : "image"
+    );
+    expect(order).toEqual(["Offers", "Dolls", "Brands", "image", "New arrivals", "Advice"]);
+    expect(screen.queryByRole("navigation", { name: "Shop by gender" })).toBeNull();
+    expect(container.querySelector("#categories")).toBeNull();
+  });
+
+  it("loads the first picture section first, wherever it sits on the page", async () => {
+    page.layout = [builtIn(1, "new"), mediaBlock(2, mediaSection(12, "first")), mediaBlock(3, mediaSection(13, "second"))];
+    const { container } = await renderShop();
+    const mediaImages = container.querySelectorAll('[data-viewport="desktop"] [data-slide] img');
+    expect(mediaImages).toHaveLength(2);
+    expect(mediaImages[0]).toHaveAttribute("data-priority", "true");
+    expect(mediaImages[1]).toHaveAttribute("data-priority", "false");
+  });
+
+  it("fills a category section with products from its category and everything beneath it", async () => {
     await renderShop();
     const building = screen.getByRole("heading", { name: "Building" }).closest("section")!;
     expect(within(building).getByText("Brick Tower")).toBeInTheDocument();
@@ -165,7 +227,7 @@ describe("shop page", () => {
     expect(within(dolls).queryByText("Old Doll")).toBeNull();
   });
 
-  it("links each custom section's view all to its category page", async () => {
+  it("links each category section's view all to its category page", async () => {
     await renderShop();
     const building = screen.getByRole("heading", { name: "Building" }).closest("section")!;
     expect(within(building).getByRole("link", { name: "View all" })).toHaveAttribute("href", "/en/category/building?categoryId=1");

@@ -1,4 +1,4 @@
-import type { Advice, Announcement, Category, Collection, EntityMedia, Offer, Product, ProductAttribute, Supplier, ShopCustomBlock, ShopMediaSection } from "@capella/shared";
+import type { Advice, Announcement, Category, Collection, EntityMedia, Offer, Product, ProductAttribute, Supplier, ShopPageBlock, ShopPageBuiltInBlockType } from "@capella/shared";
 
 export type Listener = () => void;
 export type CategoryUpsertInput = Omit<Category, "id"> & { id?: number };
@@ -122,6 +122,23 @@ export type CategoryApiShape = {
 
 export type ProductAttributeKind = "brands" | "ageGroups" | "genders" | "suppliers";
 
+/** One picture as the API takes it. */
+export type ShopMediaItemPayload = {
+  arImagePath: string | null;
+  arMobileImagePath: string | null;
+  enImagePath: string | null;
+  enMobileImagePath: string | null;
+  targetType: string;
+  targetId: number | null;
+  sortOrder: number;
+};
+
+/** One shop page section as the API takes it when the layout is saved. A picture section without an id is a new one. */
+export type ShopPageBlockPayload =
+  | { type: ShopPageBuiltInBlockType }
+  | { type: "category"; categoryId: number }
+  | { type: "media"; mediaSectionId: number | null; status: "active" | "inactive"; items: ShopMediaItemPayload[] };
+
 export type ErpStoreSnapshot = {
   products: Product[];
   categories: Category[];
@@ -132,8 +149,7 @@ export type ErpStoreSnapshot = {
   collections: Collection[];
   offers: Offer[];
   advices: Advice[];
-  shopMediaSections: ShopMediaSection[];
-  shopCustomBlocks: ShopCustomBlock[];
+  shopPageBlocks: ShopPageBlock[];
   announcements: Announcement[];
   announcementBarStatus: "active" | "inactive";
   sales: SalesAnalytics;

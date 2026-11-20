@@ -377,23 +377,29 @@ export const advices = mysqlTable("advices", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
 
-// slot 1 is the fixed banner at the top of the shop page; a section with no slot is a picture section placed in the shop page's custom sections.
+/** A picture section. Where it shows on the shop page is set by its row in shop_page_blocks. */
 export const shopMediaSections = mysqlTable("shop_media_sections", {
   id: int("id").autoincrement().primaryKey(),
-  slot: int("slot").unique(),
   status: mysqlEnum("status", ["active", "inactive"]).notNull().default("inactive"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
 
-export const shopCustomBlockTypes = ["category", "media"] as const;
+/** The shop page's built-in sections: each appears at most once. Collections is not on the page by default; the ERP can add it. */
+export const shopPageBuiltInBlockTypes = ["genders", "category_tiles", "bestsellers", "new", "offers", "brands", "collections"] as const;
+/** A shop page section: a built-in one, a category's product row, or a picture section. */
+export const shopPageBlockTypes = [...shopPageBuiltInBlockTypes, "category", "media"] as const;
 
-/** The shop page's custom sections, in order: a category's product row or a picture section. Each category and each picture section appears at most once. */
-export const shopCustomBlocks = mysqlTable("shop_custom_blocks", {
+/**
+ * The shop page, in order, from the top banner area down to Falta & Zoobi. `block_key` keeps each built-in section, each
+ * category and each picture section to one row: the type for a built-in one, "category:<id>" or "media:<id>" otherwise.
+ */
+export const shopPageBlocks = mysqlTable("shop_page_blocks", {
   id: int("id").autoincrement().primaryKey(),
-  type: mysqlEnum("type", shopCustomBlockTypes).notNull(),
-  categoryId: int("category_id").unique().references(() => categories.id, { onDelete: "cascade" }),
-  mediaSectionId: int("media_section_id").unique().references(() => shopMediaSections.id, { onDelete: "cascade" }),
+  type: mysqlEnum("type", shopPageBlockTypes).notNull(),
+  blockKey: varchar("block_key", { length: 40 }).notNull().unique(),
+  categoryId: int("category_id").references(() => categories.id, { onDelete: "cascade" }),
+  mediaSectionId: int("media_section_id").references(() => shopMediaSections.id, { onDelete: "cascade" }),
   sortOrder: int("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()

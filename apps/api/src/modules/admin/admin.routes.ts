@@ -37,8 +37,7 @@ import {
 } from "./admin.controller.js";
 import { adminAdvicesRoutes } from "./advices/admin-advices.routes.js";
 import { adminProductAttributeRoutes } from "./product-attributes/admin-product-attributes.routes.js";
-import { adminShopMediaRoutes } from "./shop-media/admin-shop-media.routes.js";
-import { adminShopCustomSectionsRoutes } from "./shop-media/admin-shop-custom-sections.routes.js";
+import { adminShopLayoutRoutes } from "./shop-media/admin-shop-layout.routes.js";
 import { adminAnnouncementsRoutes } from "./announcements/admin-announcements.routes.js";
 import { adminOrdersRoutes } from "../orders/admin-orders.routes.js";
 import { getAdminSalesController } from "../orders/orders.controller.js";
@@ -90,8 +89,7 @@ adminRoutes.post("/collections/:id/toggle-status", requireErpPermission("collect
 adminRoutes.use(adminProductAttributeRoutes);
 adminRoutes.use("/staff", adminStaffManagementRoutes);
 adminRoutes.use("/advices", adminAdvicesRoutes);
-adminRoutes.use("/shop-media-sections", adminShopMediaRoutes);
-adminRoutes.use("/shop-custom-sections", adminShopCustomSectionsRoutes);
+adminRoutes.use("/shop-layout", adminShopLayoutRoutes);
 adminRoutes.use("/announcements", adminAnnouncementsRoutes);
 adminRoutes.use("/orders", adminOrdersRoutes);
 adminRoutes.use("/reviews", adminReviewsRoutes);

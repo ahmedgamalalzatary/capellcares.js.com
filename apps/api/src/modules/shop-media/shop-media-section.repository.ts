@@ -1,12 +1,14 @@
-import { and, asc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { SHOP_PAGE_DEFAULT_BLOCK_TYPES, type ShopPageBlock } from "@capella/shared";
 import {
   categories,
   collections,
   offers,
   products,
-  shopCustomBlocks,
   shopMediaSectionItems,
   shopMediaSections,
+  shopPageBlocks,
+  shopPageBuiltInBlockTypes,
   type shopMediaSectionTargetTypes
 } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
@@ -23,25 +25,24 @@ export type ShopMediaSectionItemInput = {
   sortOrder: number;
 };
 
-export type ShopCustomBlockInput =
+export type ShopPageBlockInput =
+  | { type: (typeof shopPageBuiltInBlockTypes)[number] }
   | { type: "category"; categoryId: number }
   | { type: "media"; mediaSectionId: number | null; status: "active" | "inactive"; items: ShopMediaSectionItemInput[] };
 
-type DbExecutor = Pick<typeof db, "select" | "insert">;
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type SectionRow = typeof shopMediaSections.$inferSelect;
+type BuiltInBlockType = (typeof shopPageBuiltInBlockTypes)[number];
 
-/** The top banner is the only picture section with a fixed place (slot 1); it always exists so the ERP can fill it. */
-const TOP_BANNER_SLOT = 1;
+/** What a shop that never set its layout shows. */
+const DEFAULT_LAYOUT: readonly BuiltInBlockType[] = SHOP_PAGE_DEFAULT_BLOCK_TYPES;
 
-async function ensureShopMediaSections(tx: DbExecutor = db) {
-  const existing = await tx
-    .select({ id: shopMediaSections.id })
-    .from(shopMediaSections)
-    .where(eq(shopMediaSections.slot, TOP_BANNER_SLOT))
-    .limit(1);
-  if (existing.length === 0) {
-    await tx.insert(shopMediaSections).values({ slot: TOP_BANNER_SLOT, status: "inactive" });
+/** A shop that never set its layout (a new database) starts from the built-in sections. Saving always keeps at least one section, so an empty table only ever means "never set". */
+async function ensureShopPageLayout() {
+  const [existing] = await db.select({ id: shopPageBlocks.id }).from(shopPageBlocks).limit(1);
+  if (!existing) {
+    // Ignored when another request filled it first: block_key keeps each built-in section to one row.
+    await db.insert(shopPageBlocks).ignore().values(DEFAULT_LAYOUT.map((type, index) => ({ type, blockKey: type, sortOrder: index + 1 })));
   }
 }
 
@@ -75,16 +76,6 @@ async function loadTargetSlugMap(items: Array<{ targetType: ShopMediaTargetType;
   };
 }
 
-async function listSectionsBase() {
-  await ensureShopMediaSections();
-  const sectionRows = await db
-    .select()
-    .from(shopMediaSections)
-    .where(isNotNull(shopMediaSections.slot))
-    .orderBy(asc(shopMediaSections.slot));
-  return mapSections(sectionRows);
-}
-
 async function mapSections(sectionRows: SectionRow[]) {
   if (sectionRows.length === 0) {
     return [];
@@ -98,7 +89,6 @@ async function mapSections(sectionRows: SectionRow[]) {
 
   return sectionRows.map((section) => ({
     id: section.id,
-    slot: section.slot === TOP_BANNER_SLOT ? (TOP_BANNER_SLOT as 1) : null,
     status: section.status,
     items: itemRows
       .filter((item) => item.sectionId === section.id)
@@ -125,15 +115,6 @@ async function mapSections(sectionRows: SectionRow[]) {
   }));
 }
 
-export async function listShopMediaSectionsRepo() {
-  return listSectionsBase();
-}
-
-export async function listActiveShopMediaSectionsRepo() {
-  const sections = await listSectionsBase();
-  return sections.filter((section) => section.status === "active" && section.items.length > 0);
-}
-
 async function writeSectionItems(tx: Tx, sectionId: number, items: ShopMediaSectionItemInput[]) {
   await tx.delete(shopMediaSectionItems).where(eq(shopMediaSectionItems.sectionId, sectionId));
   if (items.length > 0) {
@@ -141,34 +122,31 @@ async function writeSectionItems(tx: Tx, sectionId: number, items: ShopMediaSect
   }
 }
 
-/** Every custom section in order, inactive picture sections included (the ERP view). */
-export async function listShopCustomBlocksRepo() {
-  const blockRows = await db.select().from(shopCustomBlocks).orderBy(asc(shopCustomBlocks.sortOrder), asc(shopCustomBlocks.id));
+/** Every section of the shop page in order, inactive picture sections and trashed categories included (the ERP view). */
+export async function listShopPageBlocksRepo(): Promise<ShopPageBlock[]> {
+  await ensureShopPageLayout();
+  const blockRows = await db.select().from(shopPageBlocks).orderBy(asc(shopPageBlocks.sortOrder), asc(shopPageBlocks.id));
   const mediaSectionIds = blockRows.flatMap((block) => (block.mediaSectionId == null ? [] : [block.mediaSectionId]));
   const sectionRows = mediaSectionIds.length > 0
     ? await db.select().from(shopMediaSections).where(inArray(shopMediaSections.id, mediaSectionIds))
     : [];
   const sectionsById = new Map((await mapSections(sectionRows)).map((section) => [section.id, section] as const));
 
-  type MappedSection = Awaited<ReturnType<typeof mapSections>>[number];
-  type Block =
-    | { id: number; type: "category"; categoryId: number; mediaSection: null; sortOrder: number }
-    | { id: number; type: "media"; categoryId: null; mediaSection: MappedSection; sortOrder: number };
-
-  return blockRows.flatMap((block): Block[] => {
-    if (block.type === "category" && block.categoryId != null) {
-      return [{ id: block.id, type: "category" as const, categoryId: block.categoryId, mediaSection: null, sortOrder: block.sortOrder }];
+  return blockRows.flatMap((block): ShopPageBlock[] => {
+    if (block.type === "category") {
+      return block.categoryId == null ? [] : [{ id: block.id, type: "category", categoryId: block.categoryId, mediaSection: null, sortOrder: block.sortOrder }];
     }
-    const mediaSection = block.mediaSectionId == null ? undefined : sectionsById.get(block.mediaSectionId);
-    return mediaSection
-      ? [{ id: block.id, type: "media" as const, categoryId: null, mediaSection, sortOrder: block.sortOrder }]
-      : [];
+    if (block.type === "media") {
+      const mediaSection = block.mediaSectionId == null ? undefined : sectionsById.get(block.mediaSectionId);
+      return mediaSection ? [{ id: block.id, type: "media", categoryId: null, mediaSection, sortOrder: block.sortOrder }] : [];
+    }
+    return [{ id: block.id, type: block.type, categoryId: null, mediaSection: null, sortOrder: block.sortOrder }];
   });
 }
 
-/** What the shop page shows: categories not in the trash, and picture sections that are on and have pictures. Whether a category row has products is decided by the storefront. */
-export async function listActiveShopCustomBlocksRepo() {
-  const blocks = await listShopCustomBlocksRepo();
+/** What the shop page shows: categories not in the trash, and picture sections that are on and have pictures. Whether a section has products to show is decided by the storefront. */
+export async function listActiveShopPageBlocksRepo() {
+  const blocks = await listShopPageBlocksRepo();
   const categoryIds = blocks.flatMap((block) => (block.type === "category" ? [block.categoryId] : []));
   const liveCategoryIds = new Set(
     categoryIds.length > 0
@@ -180,15 +158,20 @@ export async function listActiveShopCustomBlocksRepo() {
   );
 
   return blocks.filter((block) => (
-    block.type === "category"
-      ? liveCategoryIds.has(block.categoryId)
-      : block.mediaSection.status === "active" && block.mediaSection.items.length > 0
+    block.type === "category" ? liveCategoryIds.has(block.categoryId)
+      : block.type === "media" ? block.mediaSection.status === "active" && block.mediaSection.items.length > 0
+        : true
   ));
 }
 
-/** Ids of the picture sections that belong to the custom sections (never the top banner). */
-export async function listCustomMediaSectionIdsRepo() {
-  const rows = await db.select({ id: shopMediaSections.id }).from(shopMediaSections).where(isNull(shopMediaSections.slot));
+/** The shop page's live picture sections, in page order. */
+export async function listActiveShopMediaSectionsRepo() {
+  return (await listActiveShopPageBlocksRepo()).flatMap((block) => (block.type === "media" ? [block.mediaSection] : []));
+}
+
+/** Ids of every picture section (each belongs to one place on the shop page). */
+export async function listShopMediaSectionIdsRepo() {
+  const rows = await db.select({ id: shopMediaSections.id }).from(shopMediaSections);
   return new Set(rows.map((row) => row.id));
 }
 
@@ -204,62 +187,44 @@ export async function liveCategoriesExistRepo(ids: number[]) {
   return rows.length === new Set(ids).size;
 }
 
-/** Replaces the whole custom sections list in one go: new picture sections are created, kept ones updated, and picture sections left out are deleted with their pictures. */
-export async function replaceShopCustomBlocksRepo(blocks: ShopCustomBlockInput[]) {
+/** Replaces the whole shop page in one go: new picture sections are created, kept ones updated, and picture sections left out are deleted with their pictures. */
+export async function replaceShopPageBlocksRepo(blocks: ShopPageBlockInput[]) {
   await db.transaction(async (tx) => {
-    const existingMedia = await tx.select({ id: shopMediaSections.id }).from(shopMediaSections).where(isNull(shopMediaSections.slot));
+    const existingMedia = await tx.select({ id: shopMediaSections.id }).from(shopMediaSections);
     const keptMediaIds = new Set<number>();
-    const blockRows: Array<typeof shopCustomBlocks.$inferInsert> = [];
+    const blockRows: Array<typeof shopPageBlocks.$inferInsert> = [];
 
     for (const [index, block] of blocks.entries()) {
       const sortOrder = index + 1;
       if (block.type === "category") {
-        blockRows.push({ type: "category", categoryId: block.categoryId, mediaSectionId: null, sortOrder });
+        blockRows.push({ type: "category", blockKey: `category:${block.categoryId}`, categoryId: block.categoryId, sortOrder });
+        continue;
+      }
+      if (block.type !== "media") {
+        blockRows.push({ type: block.type, blockKey: block.type, sortOrder });
         continue;
       }
 
       let sectionId = block.mediaSectionId;
       if (sectionId == null) {
-        const [created] = await tx.insert(shopMediaSections).values({ slot: null, status: block.status }).$returningId();
-        sectionId = created.id;
+        const [created] = await tx.insert(shopMediaSections).values({ status: block.status }).$returningId();
+        sectionId = created!.id;
       } else {
         await tx.update(shopMediaSections).set({ status: block.status }).where(eq(shopMediaSections.id, sectionId));
       }
       keptMediaIds.add(sectionId);
       await writeSectionItems(tx, sectionId, block.items);
-      blockRows.push({ type: "media", categoryId: null, mediaSectionId: sectionId, sortOrder });
+      blockRows.push({ type: "media", blockKey: `media:${sectionId}`, mediaSectionId: sectionId, sortOrder });
     }
 
-    await tx.delete(shopCustomBlocks);
+    await tx.delete(shopPageBlocks);
     const droppedMediaIds = existingMedia.map((row) => row.id).filter((id) => !keptMediaIds.has(id));
     if (droppedMediaIds.length > 0) {
       await tx.delete(shopMediaSections).where(inArray(shopMediaSections.id, droppedMediaIds));
     }
     if (blockRows.length > 0) {
-      await tx.insert(shopCustomBlocks).values(blockRows);
+      await tx.insert(shopPageBlocks).values(blockRows);
     }
-  });
-}
-
-export async function replaceShopMediaSectionRepo(slot: 1, status: "active" | "inactive", items: ShopMediaSectionItemInput[]) {
-  await db.transaction(async (tx) => {
-    await ensureShopMediaSections(tx);
-    const [section] = await tx
-      .select({ id: shopMediaSections.id })
-      .from(shopMediaSections)
-      .where(eq(shopMediaSections.slot, slot))
-      .limit(1);
-
-    if (!section) {
-      throw new Error(`Missing shop media section slot ${slot}`);
-    }
-
-    await tx
-      .update(shopMediaSections)
-      .set({ status })
-      .where(eq(shopMediaSections.id, section.id));
-
-    await writeSectionItems(tx, section.id, items);
   });
 }
 

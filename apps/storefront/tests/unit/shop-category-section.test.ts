@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Category, Product } from "@capella/shared";
-import { CUSTOM_SECTION_PRODUCT_LIMIT, pickCategoryRowProducts } from "@/lib/shop-custom-sections";
+import { CATEGORY_SECTION_PRODUCT_LIMIT, pickCategoryRowProducts } from "@/lib/shop-category-section";
 
 function category(id: number, parentId: number | null): Category {
   return { id, parentId, slug: `c${id}`, name: { ar: `ق${id}`, en: `C${id}` }, isLeaf: false };
@@ -43,7 +43,7 @@ describe("pickCategoryRowProducts", () => {
   it("shows at most 12 products", () => {
     const products = Array.from({ length: 20 }, (_, index) => product(index + 1, 1, `2026-01-${String(index + 1).padStart(2, "0")}T00:00:00Z`));
     const picked = pickCategoryRowProducts(1, categories, products);
-    expect(CUSTOM_SECTION_PRODUCT_LIMIT).toBe(12);
+    expect(CATEGORY_SECTION_PRODUCT_LIMIT).toBe(12);
     expect(picked).toHaveLength(12);
     expect(picked[0].id).toBe(20);
   });
