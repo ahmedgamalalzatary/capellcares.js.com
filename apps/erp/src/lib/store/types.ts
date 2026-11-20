@@ -1,4 +1,4 @@
-import type { Advice, Announcement, Category, Collection, EntityMedia, Offer, Product, ProductAttribute, Supplier, ShopMediaSection } from "@capella/shared";
+import type { Advice, Announcement, Category, Collection, EntityMedia, Offer, Product, ProductAttribute, Supplier, ShopCustomBlock, ShopMediaSection } from "@capella/shared";
 
 export type Listener = () => void;
 export type CategoryUpsertInput = Omit<Category, "id"> & { id?: number };
@@ -133,6 +133,7 @@ export type ErpStoreSnapshot = {
   offers: Offer[];
   advices: Advice[];
   shopMediaSections: ShopMediaSection[];
+  shopCustomBlocks: ShopCustomBlock[];
   announcements: Announcement[];
   announcementBarStatus: "active" | "inactive";
   sales: SalesAnalytics;

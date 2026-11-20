@@ -385,12 +385,18 @@ export interface ShopMediaSectionItem {
 
 export interface ShopMediaSection {
   id: number;
-  slot: 1 | 2 | 3 | 4 | 5;
+  /** 1 = the fixed banner at the top of the shop page; null = a picture section placed among the shop page's custom sections. */
+  slot: 1 | null;
   status: "active" | "inactive";
   items: ShopMediaSectionItem[];
   createdAt?: string;
   updatedAt?: string;
 }
+
+/** One of the shop page's custom sections, in the order they show: a category's product row, or a picture section. */
+export type ShopCustomBlock =
+  | { id: number; type: "category"; categoryId: number; mediaSection: null; sortOrder: number }
+  | { id: number; type: "media"; categoryId: null; mediaSection: ShopMediaSection; sortOrder: number };
 
 export interface Announcement {
   id: number;

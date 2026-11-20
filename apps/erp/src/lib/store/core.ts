@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminOrderDto, Advice, Announcement, Category, Collection, Offer, Product, ProductAttribute, ShopMediaSection, Supplier } from "@capella/shared";
+import type { AdminOrderDto, Advice, Announcement, Category, Collection, Offer, Product, ProductAttribute, ShopCustomBlock, ShopMediaSection, Supplier } from "@capella/shared";
 import {
   api,
   getAdminAuthUser,
@@ -22,6 +22,17 @@ import type {
   ProductApiShape,
   SalesAnalytics
 } from "./types";
+
+/** One image of a picture section, as the API takes it. */
+type ShopMediaItemInput = {
+  arImagePath: string | null;
+  arMobileImagePath: string | null;
+  enImagePath: string | null;
+  enMobileImagePath: string | null;
+  targetType: string;
+  targetId: number | null;
+  sortOrder: number;
+};
 
 /** Focus/visibility refetches are skipped while the last load is younger than this. */
 const FOCUS_REFRESH_MIN_AGE_MS = 60_000;
@@ -49,6 +60,7 @@ export class ErpStore {
   offers: Offer[] = [];
   advices: Advice[] = [];
   shopMediaSections: ShopMediaSection[] = [];
+  shopCustomBlocks: ShopCustomBlock[] = [];
   announcements: Announcement[] = [];
   announcementBarStatus: "active" | "inactive" = "active";
   sales: SalesAnalytics = this.createEmptySales();
@@ -81,6 +93,7 @@ export class ErpStore {
       offers: this.offers,
       advices: this.advices,
       shopMediaSections: this.shopMediaSections,
+      shopCustomBlocks: this.shopCustomBlocks,
       announcements: this.announcements,
       announcementBarStatus: this.announcementBarStatus,
       sales: this.sales,
@@ -114,6 +127,7 @@ export class ErpStore {
     this.offers = [];
     this.advices = [];
     this.shopMediaSections = [];
+    this.shopCustomBlocks = [];
     this.announcements = [];
     this.announcementBarStatus = "active";
     this.sales = this.createEmptySales();
@@ -289,6 +303,12 @@ export class ErpStore {
         load: () => api.get<{ items: ShopMediaSection[] }>("/api/erp/shop-media-sections"),
         assign: (result: { items: ShopMediaSection[] }, store: ErpStore) => {
           store.shopMediaSections = result.items;
+        }
+      },
+      canRead("shop_media.read") && {
+        load: () => api.get<{ items: ShopCustomBlock[] }>("/api/erp/shop-custom-sections"),
+        assign: (result: { items: ShopCustomBlock[] }, store: ErpStore) => {
+          store.shopCustomBlocks = result.items;
         }
       },
       canRead("shop_media.read") && {
@@ -474,18 +494,20 @@ export class ErpStore {
   }
 
   async updateShopMediaSection(
-    slot: 1 | 2 | 3 | 4 | 5,
-    input: { status: "active" | "inactive"; items: Array<{
-      arImagePath: string | null;
-      arMobileImagePath: string | null;
-      enImagePath: string | null;
-      enMobileImagePath: string | null;
-      targetType: string;
-      targetId: number | null;
-      sortOrder: number;
-    }> }
+    slot: 1,
+    input: { status: "active" | "inactive"; items: ShopMediaItemInput[] }
   ) {
     await this.mutate(() => api.post(`/api/erp/shop-media-sections/${slot}`, input));
+  }
+
+  /** Saves the shop page's whole custom sections list, in order. A picture section without an id is created; one left out is deleted. */
+  async replaceShopCustomSections(
+    blocks: Array<
+      | { type: "category"; categoryId: number }
+      | { type: "media"; mediaSectionId: number | null; status: "active" | "inactive"; items: ShopMediaItemInput[] }
+    >
+  ) {
+    await this.mutate(() => api.put("/api/erp/shop-custom-sections", { blocks }));
   }
 
   async replaceAnnouncements(input: {

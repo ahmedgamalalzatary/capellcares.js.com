@@ -1,39 +1,17 @@
 import type { Request, Response } from "express";
 import {
   listShopMediaSectionsRepo,
-  replaceShopMediaSectionRepo,
-  shopMediaTargetExists
+  replaceShopMediaSectionRepo
 } from "../../shop-media/shop-media-section.repository.js";
+import { normalizeShopMediaItems } from "../../shop-media/shop-media-items.js";
 import { triggerStorefrontRevalidation } from "../storefront-revalidation.js";
-import { isDetailTargetType, isListingTargetType, shopMediaTargetTypes } from "../../shop-media/shop-media.shared.js";
 
-function sanitizeString(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
+// Only the top banner keeps a slot; the other picture sections live among the custom sections.
+function parseSlot(value: unknown): 1 | null {
+  return Number.parseInt(String(value), 10) === 1 ? 1 : null;
 }
 
-function normalizeUploadPath(value: string) {
-  if (!value) {
-    return null;
-  }
-
-  try {
-    const parsed = new URL(value);
-    if (parsed.pathname.startsWith("/uploads/")) {
-      return parsed.pathname;
-    }
-  } catch {
-    // Non-URL strings are handled below.
-  }
-
-  return value || null;
-}
-
-function parseSlot(value: unknown): 1 | 2 | 3 | 4 | 5 | null {
-  const slot = Number.parseInt(String(value), 10);
-  return slot === 1 || slot === 2 || slot === 3 || slot === 4 || slot === 5 ? slot : null;
-}
-
-async function safeTriggerShopMediaRevalidation() {
+export async function safeTriggerShopMediaRevalidation() {
   try {
     await triggerStorefrontRevalidation({ entity: "shop-media" });
   } catch (error) {
@@ -51,63 +29,15 @@ export async function updateAdminShopMediaSectionController(req: Request, res: R
     return res.status(400).json({ error: "Invalid shop media section slot" });
   }
 
-  const input = req.body as {
-    status?: unknown;
-    items?: Array<{
-      arImagePath?: unknown;
-      arMobileImagePath?: unknown;
-      enImagePath?: unknown;
-      enMobileImagePath?: unknown;
-      targetType?: unknown;
-      targetId?: unknown;
-      sortOrder?: unknown;
-    }>;
-  };
+  const input = req.body as { status?: unknown; items?: unknown };
 
   if (input.status !== "active" && input.status !== "inactive") {
     return res.status(400).json({ error: "Invalid shop media section payload" });
   }
 
-  if (!Array.isArray(input.items)) {
+  const normalizedItems = await normalizeShopMediaItems(input.items);
+  if (normalizedItems == null) {
     return res.status(400).json({ error: "Invalid shop media section payload" });
-  }
-
-  const normalizedItems = [];
-  for (const rawItem of input.items) {
-    const arImagePath = normalizeUploadPath(sanitizeString(rawItem?.arImagePath));
-    const arMobileImagePath = normalizeUploadPath(sanitizeString(rawItem?.arMobileImagePath));
-    const enImagePath = normalizeUploadPath(sanitizeString(rawItem?.enImagePath));
-    const enMobileImagePath = normalizeUploadPath(sanitizeString(rawItem?.enMobileImagePath));
-    const targetType = sanitizeString(rawItem?.targetType);
-    const targetIdValue = rawItem?.targetId;
-    const sortOrder = Number.parseInt(String(rawItem?.sortOrder ?? 0), 10);
-
-    if (
-      (!arImagePath && !arMobileImagePath && !enImagePath && !enMobileImagePath)
-      || !shopMediaTargetTypes.includes(targetType as (typeof shopMediaTargetTypes)[number])
-      || !Number.isFinite(sortOrder)
-    ) {
-      return res.status(400).json({ error: "Invalid shop media section payload" });
-    }
-
-    if (isListingTargetType(targetType)) {
-      if (targetIdValue != null && targetIdValue !== "") {
-        return res.status(400).json({ error: "Invalid shop media section payload" });
-      }
-      normalizedItems.push({ arImagePath, arMobileImagePath, enImagePath, enMobileImagePath, targetType, targetId: null, sortOrder });
-      continue;
-    }
-
-    if (!isDetailTargetType(targetType)) {
-      return res.status(400).json({ error: "Invalid shop media section payload" });
-    }
-
-    const targetId = Number.parseInt(String(targetIdValue), 10);
-    if (!Number.isInteger(targetId) || targetId <= 0 || !(await shopMediaTargetExists(targetType, targetId))) {
-      return res.status(400).json({ error: "Invalid shop media section payload" });
-    }
-
-    normalizedItems.push({ arImagePath, arMobileImagePath, enImagePath, enMobileImagePath, targetType, targetId, sortOrder });
   }
 
   await replaceShopMediaSectionRepo(slot, input.status, normalizedItems);

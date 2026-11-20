@@ -16,6 +16,7 @@ import type {
   ReviewCreateInput,
   ReviewPrompt,
   ReviewPage,
+  ShopCustomBlock,
   ShopMediaSection,
   StorefrontCollectionDetail,
   StorefrontOfferDetail,
@@ -117,6 +118,12 @@ export async function fetchAdvices(options?: { lang?: string }): Promise<Advice[
 
 export async function fetchShopMediaSections(options?: { lang?: string }): Promise<ShopMediaSection[]> {
   const data = await getJSON<{ items: ShopMediaSection[] }>(`/api/v1/shop-media-sections`, options);
+  return data?.items ?? [];
+}
+
+/** The shop page's custom sections in order; only what the shop should show (categories not in the trash, picture sections that are on and have pictures). */
+export async function fetchShopCustomSections(options?: { lang?: string }): Promise<ShopCustomBlock[]> {
+  const data = await getJSON<{ items: ShopCustomBlock[] }>(`/api/v1/shop-custom-sections`, options);
   return data?.items ?? [];
 }
 

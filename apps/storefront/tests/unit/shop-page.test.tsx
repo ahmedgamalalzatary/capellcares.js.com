@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { createElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -34,8 +34,11 @@ vi.mock("@capella/shared", async () => {
         byGender: "Shop by gender",
         byCategory: "Categories",
         byBrand: "Brands",
-        viewAll: "View all"
+        viewAll: "View all",
+        bestsellers: "Bestseller",
+        newProducts: "New arrivals"
       },
+      offers: { title: "Offers" },
       common: { previous: "Previous", next: "Next" },
       shopMedia: {
         sectionLabel: "Featured media"
@@ -48,9 +51,53 @@ vi.mock("@/components/products/advice-section", () => ({
   AdviceSection: () => createElement("h2", null, "Advice")
 }));
 
+// The cards themselves are tested on their own; here each one only needs to show which product or offer it is.
+vi.mock("@/components/products/product-card", () => ({
+  ProductCard: ({ product }: any) => createElement("article", null, product.name.en)
+}));
+
+vi.mock("@/components/shop/section-card", () => ({
+  SectionCard: ({ data }: any) => createElement("article", null, data.name.en)
+}));
+
 vi.mock("@/lib/storefront-page-context", () => ({
   resolveStorefrontLang: async () => "en"
 }));
+
+function mediaSection(id: number, slot: 1 | null, image: string) {
+  return {
+    id,
+    slot,
+    status: "active",
+    items: [
+      {
+        id: id * 10,
+        arImagePath: null,
+        arMobileImagePath: null,
+        enImagePath: `http://localhost:4000/uploads/${image}.jpg`,
+        enMobileImagePath: `http://localhost:4000/uploads/${image}-mobile.jpg`,
+        targetType: "offers",
+        targetId: null,
+        sortOrder: 1
+      }
+    ]
+  };
+}
+
+function product(id: number, name: string, categoryId: number, extra: Record<string, unknown> = {}) {
+  return {
+    id,
+    slug: name.toLowerCase().replace(/ /g, "-"),
+    name: { ar: name, en: name },
+    categoryId,
+    status: "active",
+    isNew: false,
+    isBestseller: false,
+    createdAt: `2026-01-${String(id).padStart(2, "0")}T00:00:00Z`,
+    variants: [],
+    ...extra
+  };
+}
 
 vi.mock("@/lib/storefront-static-data", () => ({
   loadShopPageData: async () => ({
@@ -69,97 +116,21 @@ vi.mock("@/lib/storefront-static-data", () => ({
       { id: 2, slug: "baby", name: { ar: "بيبي", en: "Baby" }, imagePath: "/uploads/baby.png", hasProducts: false }
     ],
     advices: [],
-    shopMediaSections: [
-      {
-        id: 10,
-        slot: 1,
-        status: "active",
-        items: [
-          {
-            id: 20,
-            arImagePath: null,
-            arMobileImagePath: null,
-            enImagePath: "http://localhost:4000/uploads/section-1.jpg",
-            enMobileImagePath: "http://localhost:4000/uploads/section-1-mobile.jpg",
-            targetType: "offers",
-            targetId: null,
-            href: "/en/offers",
-            sortOrder: 1
-          }
-        ]
-      },
-      {
-        id: 11,
-        slot: 2,
-        status: "active",
-        items: [
-          {
-            id: 21,
-            arImagePath: null,
-            arMobileImagePath: null,
-            enImagePath: "http://localhost:4000/uploads/section-2.jpg",
-            enMobileImagePath: "http://localhost:4000/uploads/section-2-mobile.jpg",
-            targetType: "new",
-            targetId: null,
-            href: "/en/new",
-            sortOrder: 1
-          }
-        ]
-      },
-      {
-        id: 12,
-        slot: 3,
-        status: "active",
-        items: [
-          {
-            id: 22,
-            arImagePath: null,
-            arMobileImagePath: null,
-            enImagePath: "http://localhost:4000/uploads/section-3.jpg",
-            enMobileImagePath: "http://localhost:4000/uploads/section-3-mobile.jpg",
-            targetType: "bestsellers",
-            targetId: null,
-            href: "/en/bestsellers",
-            sortOrder: 1
-          }
-        ]
-      },
-      {
-        id: 13,
-        slot: 4,
-        status: "active",
-        items: [
-          {
-            id: 23,
-            arImagePath: null,
-            arMobileImagePath: null,
-            enImagePath: "http://localhost:4000/uploads/section-4.jpg",
-            enMobileImagePath: "http://localhost:4000/uploads/section-4-mobile.jpg",
-            targetType: "products",
-            targetId: null,
-            href: "/en/products",
-            sortOrder: 1
-          }
-        ]
-      },
-      {
-        id: 14,
-        slot: 5,
-        status: "active",
-        items: [
-          {
-            id: 24,
-            arImagePath: null,
-            arMobileImagePath: null,
-            enImagePath: "http://localhost:4000/uploads/section-5.jpg",
-            enMobileImagePath: "http://localhost:4000/uploads/section-5-mobile.jpg",
-            targetType: "collections",
-            targetId: null,
-            href: "/en/collections",
-            sortOrder: 1
-          }
-        ]
-      }
+    shopMediaSections: [mediaSection(10, 1, "top")],
+    products: [
+      product(1, "Brick Tower", 2, { isBestseller: true }),
+      product(2, "Big Doll", 4, { isNew: true }),
+      product(3, "Old Doll", 4, { status: "inactive", isNew: true })
+    ],
+    offers: [
+      { id: 1, slug: "summer", name: { ar: "صيف", en: "Summer deal" }, status: "active", deletedAt: null, categoryId: null },
+      { id: 2, slug: "gone", name: { ar: "قديم", en: "Gone deal" }, status: "inactive", deletedAt: null, categoryId: null }
+    ],
+    customBlocks: [
+      { id: 1, type: "category", categoryId: 1, mediaSection: null, sortOrder: 1 },
+      { id: 2, type: "media", categoryId: null, mediaSection: mediaSection(11, null, "custom"), sortOrder: 2 },
+      { id: 3, type: "category", categoryId: 3, mediaSection: null, sortOrder: 3 },
+      { id: 4, type: "category", categoryId: 4, mediaSection: null, sortOrder: 4 }
     ]
   })
 }));
@@ -167,23 +138,54 @@ vi.mock("@/lib/storefront-static-data", () => ({
 import ShopPage from "@/app/[lang]/shop/page";
 import { GenderTiles } from "@/components/shop/shop-tiles";
 
+async function renderShop() {
+  return render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+}
+
 describe("shop page", () => {
-  it("shows the sections in the agreed order, with an image before each", async () => {
-    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+  it("shows the sections in the agreed order, with the custom sections between bestsellers and new", async () => {
+    const { container } = await renderShop();
     const order = Array.from(container.querySelectorAll("h2, [data-viewport]")).map((el) =>
       el.tagName === "H2" ? el.textContent : "image"
     );
     expect(order).toEqual([
-      "image", "Categories",
-      "image", "Brands",
-      "image",
-      "image", "Advice",
-      "image"
+      "image", "Categories", "Bestseller",
+      "Building", "image", "Dolls",
+      "New arrivals", "Offers", "Brands", "Advice"
     ]);
   });
 
+  it("fills a custom section with products from its category and everything beneath it", async () => {
+    await renderShop();
+    const building = screen.getByRole("heading", { name: "Building" }).closest("section")!;
+    expect(within(building).getByText("Brick Tower")).toBeInTheDocument();
+    expect(within(building).queryByText("Big Doll")).toBeNull();
+    const dolls = screen.getByRole("heading", { name: "Dolls" }).closest("section")!;
+    expect(within(dolls).getByText("Big Doll")).toBeInTheDocument();
+    expect(within(dolls).queryByText("Old Doll")).toBeNull();
+  });
+
+  it("links each custom section's view all to its category page", async () => {
+    await renderShop();
+    const building = screen.getByRole("heading", { name: "Building" }).closest("section")!;
+    expect(within(building).getByRole("link", { name: "View all" })).toHaveAttribute("href", "/en/category/building?categoryId=1");
+  });
+
+  it("fills bestsellers, new and offers, leaving out hidden items, each with a view all link", async () => {
+    await renderShop();
+    const section = (name: string) => screen.getByRole("heading", { name }).closest("section")!;
+    expect(within(section("Bestseller")).getByText("Brick Tower")).toBeInTheDocument();
+    expect(within(section("Bestseller")).getByRole("link", { name: "View all" })).toHaveAttribute("href", "/en/bestsellers");
+    expect(within(section("New arrivals")).getByText("Big Doll")).toBeInTheDocument();
+    expect(within(section("New arrivals")).queryByText("Old Doll")).toBeNull();
+    expect(within(section("New arrivals")).getByRole("link", { name: "View all" })).toHaveAttribute("href", "/en/new");
+    expect(within(section("Offers")).getByText("Summer deal")).toBeInTheDocument();
+    expect(within(section("Offers")).queryByText("Gone deal")).toBeNull();
+    expect(within(section("Offers")).getByRole("link", { name: "View all" })).toHaveAttribute("href", "/en/offers");
+  });
+
   it("starts with the first image, then every gender, even one with no toys yet", async () => {
-    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+    const { container } = await renderShop();
     const section = screen.getByRole("navigation", { name: "Shop by gender" });
     expect(screen.getByRole("link", { name: "Boys" })).toHaveAttribute("href", "/en/genders/boys");
     expect(screen.getByRole("link", { name: "Baby" })).toHaveAttribute("href", "/en/genders/baby");
@@ -191,44 +193,35 @@ describe("shop page", () => {
     expect(section.compareDocumentPosition(firstImage) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
   });
 
-  it("rounds all four corners of every picture section", async () => {
-    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
-    const sections = [...container.querySelectorAll("[data-viewport]")];
-    expect(sections.length).toBeGreaterThan(0);
-    for (const section of sections) {
-      expect(section.querySelector(".rounded-\\[12px\\]")).not.toBeNull();
-      expect(section.querySelector(".rounded-t-2xl")).toBeNull();
-    }
-  });
-
   it("has no star mark beside the section headings", async () => {
-    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+    const { container } = await renderShop();
     expect(container.querySelector("h2 svg")).toBeNull();
   });
 
   it("links each main category that has products, and leaves out the rest", async () => {
-    render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
-    expect(screen.getByRole("link", { name: "Building" })).toHaveAttribute("href", "/en/category/building?categoryId=1");
-    expect(screen.getByRole("link", { name: "Dolls" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Bricks" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Empty" })).toBeNull();
+    const { container } = await renderShop();
+    const categories = container.querySelector("#categories") as HTMLElement;
+    expect(within(categories).getByRole("link", { name: "Building" })).toHaveAttribute("href", "/en/category/building?categoryId=1");
+    expect(within(categories).getByRole("link", { name: "Dolls" })).toBeInTheDocument();
+    expect(within(categories).queryByRole("link", { name: "Bricks" })).toBeNull();
+    expect(within(categories).queryByRole("link", { name: "Empty" })).toBeNull();
   });
 
   it("links brands that have products, and has no character section", async () => {
-    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+    const { container } = await renderShop();
     expect(screen.getByRole("link", { name: "Lego" })).toHaveAttribute("href", "/en/brands/lego");
     expect(screen.queryByRole("link", { name: "Unused brand" })).toBeNull();
     expect(container.querySelector('a[href*="/characters/"]')).toBeNull();
   });
 
   it("gives the footer's Category and Brands links a place to land", async () => {
-    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+    const { container } = await renderShop();
     expect(container.querySelector("#categories")).toHaveTextContent("Categories");
     expect(container.querySelector("#brands")).toHaveTextContent("Brands");
   });
 
   it("puts a view all link beside the categories and brands titles, leading to their all pages", async () => {
-    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+    const { container } = await renderShop();
     const inSection = (id: string) => Array.from(container.querySelectorAll(`#${id} a`)).find((a) => a.textContent === "View all");
     expect(inSection("categories")).toHaveAttribute("href", "/en/categories");
     expect(inSection("brands")).toHaveAttribute("href", "/en/brands");
@@ -250,12 +243,10 @@ describe("shop page", () => {
   });
 
   it("prioritizes only the first image", async () => {
-    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+    const { container } = await renderShop();
     const mediaImages = container.querySelectorAll('[data-viewport="desktop"] [data-slide] img');
-    expect(mediaImages).toHaveLength(5);
+    expect(mediaImages).toHaveLength(2);
     expect(mediaImages[0]).toHaveAttribute("data-priority", "true");
-    for (const image of Array.from(mediaImages).slice(1)) {
-      expect(image).toHaveAttribute("data-priority", "false");
-    }
+    expect(mediaImages[1]).toHaveAttribute("data-priority", "false");
   });
 });

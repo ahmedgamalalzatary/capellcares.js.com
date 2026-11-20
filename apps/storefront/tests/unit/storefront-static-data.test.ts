@@ -7,6 +7,7 @@ const {
   fetchAdvices,
   fetchCategories,
   fetchShopMediaSections,
+  fetchShopCustomSections,
   fetchBrands,
   fetchGenders,
 } = vi.hoisted(() => ({
@@ -16,6 +17,7 @@ const {
   fetchAdvices: vi.fn(),
   fetchCategories: vi.fn(),
   fetchShopMediaSections: vi.fn(),
+  fetchShopCustomSections: vi.fn(),
   fetchBrands: vi.fn(),
   fetchGenders: vi.fn(),
 }));
@@ -27,6 +29,7 @@ vi.mock("@/lib/api/client", () => ({
   fetchAdvices,
   fetchCategories,
   fetchShopMediaSections,
+  fetchShopCustomSections,
   fetchBrands,
   fetchGenders,
 }));
@@ -40,6 +43,7 @@ describe("storefront static data", () => {
     fetchAdvices.mockReset();
     fetchCategories.mockReset();
     fetchShopMediaSections.mockReset();
+    fetchShopCustomSections.mockReset();
     fetchBrands.mockReset();
     fetchBrands.mockRejectedValue(new Error("offline"));
     fetchGenders.mockReset();
@@ -50,6 +54,9 @@ describe("storefront static data", () => {
     fetchCategories.mockRejectedValue(new Error("offline"));
     fetchAdvices.mockRejectedValue(new Error("offline"));
     fetchShopMediaSections.mockRejectedValue(new Error("offline"));
+    fetchShopCustomSections.mockRejectedValue(new Error("offline"));
+    fetchProducts.mockRejectedValue(new Error("offline"));
+    fetchOffers.mockRejectedValue(new Error("offline"));
 
     const { loadShopPageData } = await import("@/lib/storefront-static-data");
 
@@ -58,7 +65,10 @@ describe("storefront static data", () => {
       brands: [],
       genders: [],
       advices: [],
-      shopMediaSections: []
+      shopMediaSections: [],
+      products: [],
+      offers: [],
+      customBlocks: []
     });
   });
 

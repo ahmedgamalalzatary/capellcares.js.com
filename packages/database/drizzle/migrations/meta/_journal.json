@@ -533,6 +533,13 @@
       "when": 1793789503675,
       "tag": "0075_kuwait_delivery",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "5",
+      "when": 1795161975996,
+      "tag": "0076_shop_custom_blocks",
+      "breakpoints": true
     }
   ]
 }

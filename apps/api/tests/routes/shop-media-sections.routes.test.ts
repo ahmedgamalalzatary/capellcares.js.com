@@ -79,10 +79,10 @@ test("erp shop media sections can be listed and updated, and storefront returns 
     assert.equal(initialResponse.status, 200);
     assert.deepEqual(
       initialResponse.json.items.map((section: any) => section.slot),
-      [1, 2, 3, 4, 5]
+      [1]
     );
 
-    const updateResponse = await request("/api/erp/shop-media-sections/2", {
+    const updateResponse = await request("/api/erp/shop-media-sections/1", {
       method: "POST",
       headers: {
         ...authHeaders,
@@ -108,7 +108,7 @@ test("erp shop media sections can be listed and updated, and storefront returns 
       headers: { ...authHeaders }
     });
 
-    const updatedSection = afterUpdate.json.items.find((section: any) => section.slot === 2);
+    const updatedSection = afterUpdate.json.items.find((section: any) => section.slot === 1);
     assert.equal(updatedSection.status, "active");
     assert.equal(updatedSection.items.length, 2);
     assert.equal(updatedSection.items[0].enImagePath, "/uploads/shop-media.jpg");
@@ -120,7 +120,7 @@ test("erp shop media sections can be listed and updated, and storefront returns 
     assert.equal(storefrontResponse.status, 200);
     assert.deepEqual(
       storefrontResponse.json.items.map((section: any) => section.slot),
-      [2]
+      [1]
     );
   });
 });
@@ -130,7 +130,7 @@ test("shop media stops resolving a target once it is soft deleted", async () => 
     const authHeaders = await getAdminAuthHeaders(request);
     const { productOneId } = await getBaselineIds();
 
-    const saveResponse = await request("/api/erp/shop-media-sections/3", {
+    const saveResponse = await request("/api/erp/shop-media-sections/1", {
       method: "POST",
       headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
@@ -141,17 +141,17 @@ test("shop media stops resolving a target once it is soft deleted", async () => 
     assert.equal(saveResponse.status, 200);
 
     const beforeDelete = await request("/api/v1/shop-media-sections");
-    const sectionBefore = beforeDelete.json.items.find((section: any) => section.slot === 3);
+    const sectionBefore = beforeDelete.json.items.find((section: any) => section.slot === 1);
     assert.ok(sectionBefore.items[0].targetSlug, "expected a live product to resolve to a slug");
 
     await db.update(products).set({ deletedAt: new Date() }).where(eq(products.id, productOneId));
 
     // The storefront reads a null slug as "link to the home page" instead of routing shoppers to a product page that no longer exists.
     const afterDelete = await request("/api/v1/shop-media-sections");
-    const sectionAfter = afterDelete.json.items.find((section: any) => section.slot === 3);
+    const sectionAfter = afterDelete.json.items.find((section: any) => section.slot === 1);
     assert.equal(sectionAfter.items[0].targetSlug, null);
 
-    const resaveResponse = await request("/api/erp/shop-media-sections/3", {
+    const resaveResponse = await request("/api/erp/shop-media-sections/1", {
       method: "POST",
       headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
@@ -191,7 +191,7 @@ test("erp shop media sections accept items with only an English desktop image", 
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
 
-    const response = await request("/api/erp/shop-media-sections/4", {
+    const response = await request("/api/erp/shop-media-sections/1", {
       method: "POST",
       headers: {
         ...authHeaders,
@@ -210,40 +210,35 @@ test("erp shop media sections accept items with only an English desktop image", 
     const afterUpdate = await request("/api/erp/shop-media-sections", {
       headers: { ...authHeaders }
     });
-    const updatedSection = afterUpdate.json.items.find((section: any) => section.slot === 4);
+    const updatedSection = afterUpdate.json.items.find((section: any) => section.slot === 1);
     assert.equal(updatedSection.items[0].enImagePath, "/uploads/shop-media.jpg");
     assert.equal(updatedSection.items[0].enMobileImagePath, null);
   });
 });
 
-test("erp shop media sections accept updating slot 5", async () => {
+test("erp shop media sections only take the top banner slot; other picture sections live in the custom sections", async () => {
   await withTestServer(app, async (request) => {
     const authHeaders = await getAdminAuthHeaders(request);
 
-    const response = await request("/api/erp/shop-media-sections/5", {
-      method: "POST",
-      headers: {
-        ...authHeaders,
-        "content-type": "application/json"
-      },
-      body: JSON.stringify({
-        status: "active",
-        items: [
-          makeItem({ targetType: "offers" })
-        ]
-      })
-    });
+    for (const slot of [2, 5]) {
+      const response = await request(`/api/erp/shop-media-sections/${slot}`, {
+        method: "POST",
+        headers: { ...authHeaders, "content-type": "application/json" },
+        body: JSON.stringify({ status: "active", items: [makeItem({ targetType: "offers" })] })
+      });
+      assert.equal(response.status, 400);
+    }
 
-    assert.equal(response.status, 200);
-    assert.equal(response.json.ok, true);
-
-    const afterUpdate = await request("/api/erp/shop-media-sections", {
-      headers: { ...authHeaders }
+    // A custom picture section never shows up as a slotted section.
+    await request("/api/erp/shop-custom-sections", {
+      method: "PUT",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ blocks: [{ type: "media", status: "active", items: [makeItem()] }] })
     });
-    const updatedSection = afterUpdate.json.items.find((section: any) => section.slot === 5);
-    assert.equal(updatedSection.status, "active");
-    assert.equal(updatedSection.items.length, 1);
-    assert.equal(updatedSection.items[0].targetType, "offers");
+    const list = await request("/api/erp/shop-media-sections", { headers: { ...authHeaders } });
+    assert.deepEqual(list.json.items.map((section: any) => section.slot), [1]);
+    const storefront = await request("/api/v1/shop-media-sections");
+    assert.deepEqual(storefront.json.items.map((section: any) => section.slot), []);
   });
 });
 

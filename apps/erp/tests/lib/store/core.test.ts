@@ -221,6 +221,25 @@ describe("ERP store", () => {
     expect((store as any).announcements).toHaveLength(1);
   });
 
+  it("hydrates the shop's custom sections during refetch", async () => {
+    apiGet.mockImplementation(async (path: string) => {
+      if (path === "/api/erp/shop-custom-sections") {
+        return { items: [{ id: 3, type: "category", categoryId: 7, mediaSection: null, sortOrder: 1 }] };
+      }
+      if (path === "/api/erp/sales") {
+        return { summary: { totalOrders: 0, totalUnitsSold: 0, totalRevenue: 0 }, productTotals: [], variantTotals: [], orders: [] };
+      }
+      return { items: [] };
+    });
+
+    const { getStore } = await import("@/lib/store");
+    const store = getStore();
+
+    await store.refetch();
+
+    expect(store.shopCustomBlocks).toEqual([{ id: 3, type: "category", categoryId: 7, mediaSection: null, sortOrder: 1 }]);
+  });
+
   it("hydrates collections during refetch", async () => {
     apiGet.mockImplementation(async (path: string) => {
       if (path === "/api/erp/collections") {
@@ -429,7 +448,7 @@ describe("ERP store", () => {
 
     expect(store.products).toHaveLength(1);
     expect(store.error).toBeNull();
-    expect(apiGet).toHaveBeenCalledTimes(12);
+    expect(apiGet).toHaveBeenCalledTimes(13);
   });
 
   it("preloads only datasets allowed by the current staff permissions", async () => {

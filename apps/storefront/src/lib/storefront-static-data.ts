@@ -1,5 +1,5 @@
-import type { Advice, Category, Collection, Offer, Product, ProductAttribute, ShopMediaSection } from "@capella/shared";
-import { fetchAdvices, fetchBrands, fetchCategories, fetchCollections, fetchGenders, fetchOffers, fetchProducts, fetchShopMediaSections } from "@/lib/api/client";
+import type { Advice, Category, Collection, Offer, Product, ProductAttribute, ShopCustomBlock, ShopMediaSection } from "@capella/shared";
+import { fetchAdvices, fetchBrands, fetchCategories, fetchCollections, fetchGenders, fetchOffers, fetchProducts, fetchShopCustomSections, fetchShopMediaSections } from "@/lib/api/client";
 
 async function safeList<T>(load: () => Promise<T[]>): Promise<T[]> {
   try {
@@ -15,16 +15,22 @@ export async function loadShopPageData(lang: string): Promise<{
   genders: ProductAttribute[];
   advices: Advice[];
   shopMediaSections: ShopMediaSection[];
+  products: Product[];
+  offers: Offer[];
+  customBlocks: ShopCustomBlock[];
 }> {
-  const [categories, brands, genders, advices, shopMediaSections] = await Promise.all([
+  const [categories, brands, genders, advices, shopMediaSections, products, offers, customBlocks] = await Promise.all([
     safeList(() => fetchCategories({ lang })),
     safeList(() => fetchBrands({ lang })),
     safeList(() => fetchGenders({ lang })),
     safeList(() => fetchAdvices({ lang })),
-    safeList(() => fetchShopMediaSections({ lang }))
+    safeList(() => fetchShopMediaSections({ lang })),
+    safeList(() => fetchProducts({ lang })),
+    safeList(() => fetchOffers({ lang })),
+    safeList(() => fetchShopCustomSections({ lang }))
   ]);
 
-  return { categories, brands, genders, advices, shopMediaSections };
+  return { categories, brands, genders, advices, shopMediaSections, products, offers, customBlocks };
 }
 
 /** The all categories page: every category; the page itself keeps the main ones that have a picture. */

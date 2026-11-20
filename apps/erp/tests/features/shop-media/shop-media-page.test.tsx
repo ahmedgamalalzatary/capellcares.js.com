@@ -94,11 +94,11 @@ describe("ShopMediaPage", () => {
     mockState = makeMockState();
   });
 
-  it("defaults to image sections and lists that tab before announcements", () => {
+  it("defaults to image sections and lists that tab before custom sections and announcements", () => {
     render(createElement(ShopMediaPage));
 
     const tabs = screen.getAllByRole("tab");
-    expect(tabs.map((tab) => tab.textContent)).toEqual(["أقسام الصور", "شريط الإعلانات"]);
+    expect(tabs.map((tab) => tab.textContent)).toEqual(["أقسام الصور", "الأقسام المخصصة", "شريط الإعلانات"]);
     expect(screen.getByRole("tab", { name: "أقسام الصور" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getAllByRole("button", { name: "حفظ القسم" }).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: "إضافة إعلان" })).not.toBeInTheDocument();

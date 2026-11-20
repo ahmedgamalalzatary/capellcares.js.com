@@ -10,11 +10,17 @@ export type EditableItem = {
   targetId: number | null;
 };
 
+/** A picture section being edited. `key` tells sections apart on the page: "top" for the top banner, a generated key for each custom picture section. */
 export type EditableSection = {
-  slot: 1 | 2 | 3 | 4 | 5;
+  key: string;
   status: "active" | "inactive";
   items: EditableItem[];
 };
+
+/** One row of the custom sections list while it is edited. */
+export type EditableCustomBlock =
+  | { key: string; type: "category"; categoryId: number | null }
+  | { key: string; type: "media"; mediaSectionId: number | null; section: EditableSection };
 
 export type EditableAnnouncement = {
   id: string;
