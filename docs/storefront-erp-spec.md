@@ -81,7 +81,7 @@ Storefront routes (`/api/v1`, locale middleware + feature-compatibility gate app
 - `/cart` — customer cart sync
 - `/wishlist`
 - `/orders` — customer order list, detail, cancel
-- `/checkout` — submit, shipping availability, shipping quote, status polling, retry
+- `/checkout` — submit, cart price with a promo code (`/price`), area quote (`/quote`)
 - `/payments/paymob` — provider callbacks
 - `/reviews` — list, submit, prompt claim
 - `/advices`, `/announcements`, `/shop-layout` (the shop page's sections in order), `/shop-media-sections` (its live picture sections, in page order)
@@ -292,6 +292,23 @@ Checkout flow:
 - Checkout supports product variant lines, offer lines, and collection lines.
 - Shipping fees are quoted before submit (`POST /api/v1/checkout/shipping/quote`) and snapshotted on the order as an immutable quote (charge, quote id, estimated shipment size). The server re-derives the quote on submit and rejects mismatches.
 - After submitting, the storefront polls `GET /api/v1/checkout/:checkoutId/status`; unpaid sessions can be retried (`POST /api/v1/checkout/:checkoutId/retry`) while stock remains reserved.
+
+## Promo Codes
+
+Ported from Capella (full rules, edge cases and data model: `docs/promo-codes-spec.md`), adapted to this store: cash on delivery only, Kuwaiti dinars in fils, delivery fees per area. Summary:
+- Signed-in customers only; a guest's code is kept and applied after login. One code per order.
+- Benefits, combinable in one code: percentage off (optional cap), fixed amount off the eligible total once, free delivery, and a free gift (variant, offer or collection, with quantity).
+- Eligibility: the whole store or chosen categories (sub-categories included), products, variants, offers and collections, with exclusions. A product inside an offer or collection is not eligible through it.
+- Rules: schedule (Kuwait time in the ERP), status (active, paused, stopped), order amount range on the cart as shown, minimum eligible pieces, maximum discounted pieces (most expensive first), total and per-customer limits (per account or phone), first-order only (any earlier order by account or phone, across every first-order code), private list of customers.
+- The code is applied to the original price and replaces a sale on the pieces it discounts; the customer confirms the exact new line prices before the code counts, and again whenever they change.
+- The discount goes into each line's total (`unit_price` = original price, `line_total` = paid, `promo_discount_amount` = the code's share), so order totals and the cash collected are unchanged. Amounts are computed in fils with largest-remainder rounding. The gift is its own line at 0 (`is_promo_gift`), never counts toward any rule and adds no delivery fee.
+- The server prices the cart with the code (`POST /api/v1/checkout/price`); the checkout quote (`POST /api/v1/checkout/quote`) takes `promoCode` and `phone` and returns the lines and the code outcome (without a code it answers exactly as before). Price, quote and checkout share one code-guessing limit per account and IP.
+- Every order phone is stored as `+965…` (migration 0079), so first-order and per-customer checks match however the phone was typed.
+- Free delivery: the customer pays no delivery at all (area fee and products' own fees); the fee the store absorbs is saved on the order (`promo_shipping_waived_fils`).
+- Uses are counted under a row lock on the code when the order is placed. A use goes back when staff deny the order, the customer cancels it, or it expires after 96 hours.
+- A code that brings an order to 0 is accepted, but staff review it before sending (`promo_free_review`, shown on the dashboard and the order page, closed with "reviewed" or by denying the order).
+- Codes are never edited or deleted after creation; staff pause, resume, stop, or duplicate as new. Every status change is audited. Each code has a report (uses, money, customers, orders, cancellation rate, uses per Kuwait day).
+- Not ported (no online payment or carrier here): reserved uses, late payments, the online-payment minimum and carrier quotes.
 
 ## Payments
 
@@ -596,6 +613,7 @@ Confirmed v1 ERP modules:
 - sales
 - reviews
 - discounts
+- promo codes (create, list, detail with report, pause/resume/stop, duplicate)
 - advices
 - announcements
 - shop media
@@ -612,7 +630,7 @@ Deferred modules:
 - reporting beyond basic lists and sales summaries
 
 ERP permissions:
-- Access is granted per permission key, grouped by module: `products.*`, `categories.*`, `offers.*`, `collections.*`, `orders.*`, `shipping.*`, `sales.read`, `discounts.manage`, `reviews.*`, `advices.*`, `shop_media.*`, `staff.*`, `trash.read`, `dashboard.read`.
+- Access is granted per permission key, grouped by module: `products.*`, `categories.*`, `offers.*`, `collections.*`, `orders.*`, `shipping.*`, `sales.read`, `discounts.manage`, `promos.read`, `promos.create`, `promos.update_status`, `reviews.*`, `advices.*`, `shop_media.*`, `staff.*`, `trash.read`, `dashboard.read`.
 - Create vs update is distinguished so a read-only or create-only staff account is possible.
 - Delete is split into `soft_delete`, `restore`, and `permanent_delete`.
 

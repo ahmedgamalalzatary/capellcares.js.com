@@ -3,8 +3,10 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { getDict } from "@capella/shared";
 
+const auth = vi.hoisted(() => ({ user: null as null | { id: number; name: string; email: string }, accessToken: null as null | string }));
+const pricing = vi.hoisted(() => ({ price: null as unknown }));
 vi.mock("@/components/providers/auth-provider", () => ({
-  useAuth: () => ({ user: null, accessToken: null })
+  useAuth: () => auth
 }));
 
 vi.mock("@/lib/api/client", () => {
@@ -45,6 +47,7 @@ vi.mock("@/lib/api/client", () => {
   };
 
   return {
+    fetchCheckoutPrice: vi.fn(async () => pricing.price),
     fetchProducts: vi.fn().mockResolvedValue([discountedProduct]),
     fetchOffers: vi.fn().mockResolvedValue([{
       id: 2,
@@ -71,12 +74,37 @@ vi.mock("@/lib/api/client", () => {
 });
 
 import { saveCartLines, clearCartLines, loadCartLines } from "@/lib/cart";
+import { savePromoCode } from "@/lib/promo/promo-code";
 import { CartProvider } from "@/components/providers/cart-provider";
 import { CartView } from "@/components/cart/cart-view";
 
 describe("CartView", () => {
   beforeEach(() => {
     clearCartLines(window.localStorage);
+    auth.user = null;
+    auth.accessToken = null;
+    savePromoCode(null);
+  });
+
+  it("tells a signed-in customer that their code makes delivery free, and totals the cart at the code's price", async () => {
+    auth.user = { id: 7, name: "Mona", email: "mona@example.com" };
+    auth.accessToken = "token";
+    pricing.price = { items: [{ index: 0, unitPrice: 200, originalUnitPrice: 200, lineTotal: 180, promoDiscount: 20 }], productsTotal: 180,
+      promo: { status: "applied", code: "SHIPFREE", arName: "توصيل", enName: "Free", discount: 20, saleGivenUp: 0, freeShipping: true, replacedSales: [] } };
+    saveCartLines(window.localStorage, [{ type: "product", productId: 1, variantId: 11, qty: 1 }]);
+    savePromoCode("shipfree");
+    render(createElement(CartProvider, null, createElement(CartView, { lang: "en", dict: getDict("en") })));
+    expect(await screen.findByText("Free delivery with your code")).toBeInTheDocument();
+    expect(screen.getByText("Promo code (SHIPFREE)")).toBeInTheDocument();
+  });
+
+  it("asks a guest to log in to use the code they typed, and keeps it", async () => {
+    saveCartLines(window.localStorage, [{ type: "product", productId: 1, variantId: 11, qty: 1 }]);
+    render(createElement(CartProvider, null, createElement(CartView, { lang: "en", dict: getDict("en") })));
+    fireEvent.change(await screen.findByLabelText("Promo code"), { target: { value: "save10" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    expect(await screen.findByText("Log in to use promo codes. Your code will be kept.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Log in" })).toBeInTheDocument();
   });
 
   it("prices a discounted product line at the effective discounted price, not the original price", async () => {

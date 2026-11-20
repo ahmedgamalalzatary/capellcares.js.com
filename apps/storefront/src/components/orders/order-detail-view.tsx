@@ -9,6 +9,7 @@ import { cancelCustomerOrder, fetchCustomerOrderById } from "@/lib/api/client";
 import { OrderCancel } from "./order-cancel";
 import { ReviewFormModal } from "@/components/reviews/review-form-modal";
 import { Icon } from "@/components/ui/icons";
+import { fillTemplate } from "@/lib/promo/promo-code";
 import {
   formatOrderDate,
   itemsCountLabel,
@@ -120,6 +121,11 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
               {" "}
               {dict.common.total}: {formatPrice(order.totalAmount, lang)}
               {order.deliveryFee > 0 ? <>{" · "}{dict.common.shipping}: {formatPrice(order.deliveryFee, lang)}</> : null}
+              {order.promoCodeText ? (
+                <span className="block font-normal">
+                  {fillTemplate(dict.promo.discountLine, { code: order.promoCodeText })}: {formatPrice((order.promoDiscountFils ?? 0) / 1000, lang)}
+                </span>
+              ) : null}
             </p>
             <Link href={`/${lang}/orders`} className="btn btn--ghost w-full sm:w-auto">{dict.orders.backToOrders}</Link>
           </div>
@@ -163,6 +169,7 @@ export function OrderDetailView({ lang, dict, orderId }: { lang: Language; dict:
                   <div className="flex min-w-0 flex-wrap items-start gap-x-4 gap-y-2">
                     <div className="min-w-0 flex-1">
                       <div className="eyebrow text-(--ink-3)!">{dict.itemType[orderItemTypeKey(item)]}</div>
+                      {item.isPromoGift ? <span className="chip mt-1 inline-flex h-6 px-2 text-xs text-(--success)">{dict.promo.giftBadge}</span> : null}
                       {href ? (
                         <Link href={href} className="mt-1 block font-medium break-words text-ink hover:text-accent">
                           {name}

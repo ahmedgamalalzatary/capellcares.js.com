@@ -2,6 +2,7 @@ import type {
   Advice,
   Category,
   CheckoutDeliveryGovernorate,
+  CheckoutPriceResponseDto,
   CheckoutQuoteDto,
   CheckoutQuoteRequestDto,
   CheckoutRequestDto,
@@ -201,11 +202,17 @@ export async function fetchDeliveryGovernorates(): Promise<CheckoutDeliveryGover
   return data.governorates;
 }
 
-/** Server-priced subtotal, delivery fee and total for the cart and chosen area. */
-export async function quoteCheckout(input: CheckoutQuoteRequestDto): Promise<CheckoutQuoteDto> {
-  const quote = await authedMutationJSON<CheckoutQuoteDto>("/api/v1/checkout/quote", null, { method: "POST", body: input });
+/** Server-priced subtotal, delivery fee and total for the cart and chosen area, with the promo code when there is one
+ * (the signed-in customer's token lets the server check the code against their account). */
+export async function quoteCheckout(input: CheckoutQuoteRequestDto, accessToken: string | null = null): Promise<CheckoutQuoteDto> {
+  const quote = await authedMutationJSON<CheckoutQuoteDto>("/api/v1/checkout/quote", accessToken, { method: "POST", body: input, retryOn401: false });
   if (!quote) throw new Error("Checkout quote failed");
   return quote;
+}
+
+/** The cart priced by the server with the promo code applied (the cart has no delivery area yet). */
+export async function fetchCheckoutPrice(input: { items: CheckoutRequestDto["items"]; promoCode?: string; phone?: string }, accessToken: string | null): Promise<CheckoutPriceResponseDto> {
+  return authedMutationJSON("/api/v1/checkout/price", accessToken, { method: "POST", body: input, retryOn401: false }) as Promise<CheckoutPriceResponseDto>;
 }
 
 async function checkoutRequestToken(accessToken: string | null, required = false) {

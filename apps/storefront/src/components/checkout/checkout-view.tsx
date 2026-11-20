@@ -6,11 +6,13 @@ import { useCart } from "@/components/providers/cart-provider";
 import { CheckoutForm } from "./checkout-form";
 import { CheckoutSummary } from "./checkout-summary";
 import { useCheckout } from "../../hooks/use-checkout";
+import { formatPrice } from "@capella/shared";
+import { fillTemplate } from "@/lib/promo/promo-code";
 import type { CheckoutViewProps } from "../../types/checkout-view.types";
 
 export function CheckoutView({ lang, dict }: CheckoutViewProps) {
   useCart();
-  const { form, errors, placing, orderId, resolved, subtotal, governorates, quote, quoteState, setField, placeOrder } = useCheckout({ lang, dict });
+  const { form, errors, placing, orderId, placedPromo, resolved, subtotal, governorates, quote, quoteState, promo, setField, placeOrder } = useCheckout({ lang, dict });
 
   if (orderId) {
     return (
@@ -32,6 +34,11 @@ export function CheckoutView({ lang, dict }: CheckoutViewProps) {
             {orderId}
           </div>
         </div>
+        {placedPromo && placedPromo.discount > 0 ? (
+          <p className="m-0 text-sm text-(--success)">
+            {fillTemplate(dict.promo.placedSaving, { code: placedPromo.code, amount: formatPrice(placedPromo.discount, lang) })}
+          </p>
+        ) : null}
         <div className="mt-4 flex flex-wrap gap-2">
           <Link href={`/${lang}/orders`} className="btn btn--ghost">
             {dict.orders.viewOrders}
@@ -67,7 +74,7 @@ export function CheckoutView({ lang, dict }: CheckoutViewProps) {
         setField={setField}
         placeOrder={placeOrder}
       />
-      <CheckoutSummary lang={lang} dict={dict} resolved={resolved} subtotal={subtotal} quote={quote} quoteState={quoteState} />
+      <CheckoutSummary lang={lang} dict={dict} resolved={resolved} subtotal={subtotal} quote={quote} quoteState={quoteState} promo={promo} />
     </div>
   );
 }

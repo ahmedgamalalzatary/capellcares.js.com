@@ -2,9 +2,15 @@
 
 import { formatPrice } from "@capella/shared";
 import type { CheckoutSummaryProps } from "../../types/checkout-view.types";
+import { PromoCodeBox } from "./promo-code-box";
+import { PromoSavingsRows } from "./promo-savings-rows";
 
-export function CheckoutSummary({ lang, dict, resolved, subtotal, quote, quoteState }: CheckoutSummaryProps) {
-  const total = quoteState === "ready" && quote ? quote.total : subtotal;
+export function CheckoutSummary({ lang, dict, resolved, subtotal, quote, quoteState, promo }: CheckoutSummaryProps) {
+  const productsTotal = promo?.productsTotal ?? subtotal;
+  const applied = promo?.applied ?? null;
+  const total = quoteState === "ready" && quote ? quote.total : productsTotal;
+  // A free-delivery code: the fee the area would have charged, struck through.
+  const waived = quoteState === "ready" && quote && quote.deliveryFee === 0 && (quote.deliveryFeeWaived ?? 0) > 0 ? quote.deliveryFeeWaived! : 0;
   return (
     <aside className="rounded-lg border border-(--hairline) bg-surface p-5 shadow-(--shadow-1) sm:p-7 lg:sticky lg:top-35">
       <span className="eyebrow text-(--ink-3)!">{dict.checkout.reviewEyebrow}</span>
@@ -23,20 +29,28 @@ export function CheckoutSummary({ lang, dict, resolved, subtotal, quote, quoteSt
                 {item.meta} · ×{item.qty}
               </div>
             </div>
-            <div className="text-ink">{formatPrice(item.unit * item.qty, lang)}</div>
+            <div className="text-end">
+              {item.lineTotal !== undefined && Math.abs(item.lineTotal - item.unit * item.qty) >= 0.0005 ? (
+                <del className="block text-xs text-(--ink-3)">{formatPrice(item.unit * item.qty, lang)}</del>
+              ) : null}
+              <span className="text-ink">{formatPrice(item.lineTotal ?? item.unit * item.qty, lang)}</span>
+            </div>
           </li>
         ))}
       </ul>
       <div className="my-5 h-px bg-(--hairline)" />
-      <div className="flex items-center justify-between py-1 text-sm">
-        <span className="text-(--ink-2)">{dict.common.subtotal}</span>
-        <span className="text-ink">{formatPrice(subtotal, lang)}</span>
-      </div>
+      <PromoSavingsRows lang={lang} dict={dict} subtotal={subtotal} productsTotal={productsTotal} applied={applied}
+        rowClassName="flex items-center justify-between py-1 text-sm" />
       <div className="flex items-center justify-between gap-3 py-1 text-sm">
         <span className="text-(--ink-2)">{dict.common.shipping}</span>
         <span data-testid="checkout-delivery" className="text-end">
           {quoteState === "ready" && quote ? (
-            quote.deliveryFee === 0
+            waived > 0 ? (
+              <span className="flex items-center gap-2">
+                <del className="text-(--ink-3)">{formatPrice(waived, lang)}</del>
+                <span className="font-semibold text-(--success)">{dict.promo.freeDeliveryWithCode}</span>
+              </span>
+            ) : quote.deliveryFee === 0
               ? <span className="font-semibold text-(--success)">{dict.common.freeDelivery}</span>
               : <span className="text-ink">{formatPrice(quote.deliveryFee, lang)}</span>
           ) : quoteState === "loading" ? (
@@ -56,6 +70,14 @@ export function CheckoutSummary({ lang, dict, resolved, subtotal, quote, quoteSt
           {formatPrice(total, lang)}
         </span>
       </div>
+      {promo ? (
+        <div className="mt-5 grid gap-2">
+          <PromoCodeBox lang={lang} dict={dict} signedIn={promo.signedIn} loginHref={promo.loginHref} savedCode={promo.savedCode}
+            promo={promo.result} preview={promo.preview} onSave={promo.saveCode}
+            confirmation={promo.confirmation} onConfirm={promo.confirm} onDecline={promo.decline} />
+          {promo.notice ? <p role="status" className="m-0 text-sm text-(--error)">{promo.notice}</p> : null}
+        </div>
+      ) : null}
     </aside>
   );
 }

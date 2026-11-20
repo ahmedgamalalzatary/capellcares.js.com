@@ -190,6 +190,23 @@ describe("OrderDetailView reviews", () => {
     expect(screen.getByText("Collection type")).toBeInTheDocument();
   });
 
+  it("shows the promo code the order used and what it saved", async () => {
+    const order = await fetchCustomerOrderById();
+    fetchCustomerOrderById.mockResolvedValue({ ...order, promoCodeText: "SAVE10", promoDiscountFils: 1500 });
+    render(createElement(OrderDetailView, { lang: "en", dict: getDict("en"), orderId: 12 }));
+    expect(await screen.findByText(/Promo code \(SAVE10\)/)).toHaveTextContent("1.5");
+  });
+
+  it("marks the code's free gift line", async () => {
+    const order = await fetchCustomerOrderById();
+    fetchCustomerOrderById.mockResolvedValue({
+      ...order,
+      items: [order.items[0], { ...order.items[0], id: 22, unitPrice: 0, lineTotal: 0, isPromoGift: true, snapshotNameEn: "Gift Ball", review: null }]
+    });
+    render(createElement(OrderDetailView, { lang: "en", dict: getDict("en"), orderId: 12 }));
+    expect(await screen.findByText("Free gift")).toBeInTheDocument();
+  });
+
   it("shows an error instead of an empty receipt when loading fails", async () => {
     fetchCustomerOrderById.mockRejectedValue(new TypeError("network down"));
 
