@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminOrderDto, AdminOrderReviewFlagDto, Advice, Announcement, Category, Collection, Offer, Product, ShopMediaSection } from "@capella/shared";
+import type { AdminOrderDto, AdminOrderReviewFlagDto, Advice, Announcement, Category, Collection, Offer, Product, ShopPageBlock } from "@capella/shared";
 import type { ShippingBulkRequest, ShippingBulkResult } from "@capella/shared";
 import {
   api,
@@ -21,7 +21,8 @@ import type {
   Listener,
   PaymobReconciliationPayload,
   ProductApiShape,
-  SalesAnalytics
+  SalesAnalytics,
+  ShopPageBlockPayload
 } from "./types";
 
 /** Focus/visibility refetches are skipped while the last load is younger than this. */
@@ -38,7 +39,7 @@ export class ErpStore {
   collections: Collection[] = [];
   offers: Offer[] = [];
   advices: Advice[] = [];
-  shopMediaSections: ShopMediaSection[] = [];
+  shopPageBlocks: ShopPageBlock[] = [];
   announcements: Announcement[] = [];
   announcementBarStatus: "active" | "inactive" = "active";
   sales: SalesAnalytics = this.createEmptySales();
@@ -66,7 +67,7 @@ export class ErpStore {
       collections: this.collections,
       offers: this.offers,
       advices: this.advices,
-      shopMediaSections: this.shopMediaSections,
+      shopPageBlocks: this.shopPageBlocks,
       announcements: this.announcements,
       announcementBarStatus: this.announcementBarStatus,
       sales: this.sales,
@@ -95,7 +96,7 @@ export class ErpStore {
     this.collections = [];
     this.offers = [];
     this.advices = [];
-    this.shopMediaSections = [];
+    this.shopPageBlocks = [];
     this.announcements = [];
     this.announcementBarStatus = "active";
     this.sales = this.createEmptySales();
@@ -268,9 +269,9 @@ export class ErpStore {
         }
       },
       canRead("shop_media.read") && {
-        load: () => api.get<{ items: ShopMediaSection[] }>("/api/erp/shop-media-sections"),
-        assign: (result: { items: ShopMediaSection[] }, store: ErpStore) => {
-          store.shopMediaSections = result.items;
+        load: () => api.get<{ items: ShopPageBlock[] }>("/api/erp/shop-layout"),
+        assign: (result: { items: ShopPageBlock[] }, store: ErpStore) => {
+          store.shopPageBlocks = result.items;
         }
       },
       canRead("shop_media.read") && {
@@ -419,19 +420,9 @@ export class ErpStore {
     await this.mutate(() => api.del(`/api/erp/advices/${id}`));
   }
 
-  async updateShopMediaSection(
-    slot: 1 | 2 | 3 | 4 | 5,
-    input: { status: "active" | "inactive"; items: Array<{
-      arImagePath: string | null;
-      arMobileImagePath: string | null;
-      enImagePath: string | null;
-      enMobileImagePath: string | null;
-      targetType: string;
-      targetId: number | null;
-      sortOrder: number;
-    }> }
-  ) {
-    await this.mutate(() => api.post(`/api/erp/shop-media-sections/${slot}`, input));
+  /** Saves the whole shop page layout at once, in the given order. */
+  async replaceShopLayout(blocks: ShopPageBlockPayload[]) {
+    await this.mutate(() => api.put("/api/erp/shop-layout", { blocks }));
   }
 
   async replaceAnnouncements(input: {

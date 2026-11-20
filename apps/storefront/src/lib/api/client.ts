@@ -15,7 +15,7 @@ import type {
   ReviewCreateInput,
   ReviewPrompt,
   ReviewPage,
-  ShopMediaSection,
+  ShopPageBlock,
   StorefrontCollectionDetail,
   StorefrontOfferDetail,
   StorefrontProductDetail
@@ -115,9 +115,10 @@ export async function fetchAdvices(options?: { lang?: string }): Promise<Advice[
   return data?.items ?? [];
 }
 
-export async function fetchShopMediaSections(options?: { lang?: string }): Promise<ShopMediaSection[]> {
-  const data = await getJSON<{ items: ShopMediaSection[] }>(`/api/v1/shop-media-sections`, options);
-  return data?.items ?? [];
+/** The shop page's sections in order, as set in the ERP; null when the API did not answer. */
+export async function fetchShopLayout(options?: { lang?: string }): Promise<ShopPageBlock[] | null> {
+  const data = await getJSON<{ items: ShopPageBlock[] }>(`/api/v1/shop-layout`, options);
+  return data?.items ?? null;
 }
 
 export async function fetchAnnouncements(options?: { lang?: string }): Promise<string[] | null> {

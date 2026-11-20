@@ -8,53 +8,35 @@ import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { showErrorToast } from "@/lib/errors";
-import { moveItem as moveArrayItem } from "@/lib/array";
 import { getStore, useStore } from "@/lib/store";
 import { canReadErpModule, canUpdateErpModule } from "@/lib/erp-permissions";
 import { useCollapsedShopMedia } from "@/features/shop-media/hooks/use-collapsed-shop-media";
 import { useCollapsedShopMediaItems } from "@/features/shop-media/hooks/use-collapsed-shop-media-items";
 import { buildCategoryTreeOptions } from "@/lib/category-tree";
 import type { Announcement } from "@capella/shared";
-import type { EditableAnnouncement, EditableItem, EditableSection } from "@/features/shop-media/types";
-import { isDetailTargetType, toEditableSection } from "@/features/shop-media/lib/editable-section";
+import type { EditableAnnouncement, EditableItem } from "@/features/shop-media/types";
+import { isDetailTargetType } from "@/features/shop-media/lib/editable-section";
 import { AnnouncementsEditor } from "@/features/shop-media/components/announcements-editor";
-import { SectionEditor } from "@/features/shop-media/components/section-editor";
-
-const SHOP_MEDIA_SLOTS = [1, 2, 3, 4, 5] as const;
+import { ShopLayoutEditor } from "@/features/shop-media/components/shop-layout-editor";
 
 export default function ShopMediaPage() {
   const { user } = useAdminAuth();
-  const shopMediaSections = useStore((store) => store.shopMediaSections);
+  const shopPageBlocks = useStore((store) => store.shopPageBlocks);
   const storedAnnouncements = useStore((store) => store.announcements);
   const storedBarStatus = useStore((store) => store.announcementBarStatus);
   const products = useStore((store) => store.products);
   const categories = useStore((store) => store.categories);
   const offers = useStore((store) => store.offers);
   const collections = useStore((store) => store.collections);
-  const [sections, setSections] = useState<EditableSection[]>([]);
-  const [tab, setTab] = useState<"announcements" | "images">("images");
+  const [tab, setTab] = useState<"layout" | "announcements">("layout");
   const [announcementItems, setAnnouncementItems] = useState<EditableAnnouncement[]>([]);
   const [barStatus, setBarStatus] = useState<"active" | "inactive">("active");
-  const [savingSlot, setSavingSlot] = useState<1 | 2 | 3 | 4 | 5 | null>(null);
   const [savingAnnouncements, setSavingAnnouncements] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const dirtySlotsRef = useRef<Set<1 | 2 | 3 | 4 | 5>>(new Set());
-  const [dirtySlots, setDirtySlots] = useState<Set<1 | 2 | 3 | 4 | 5>>(new Set());
   const announcementsDirtyRef = useRef(false);
   const [announcementsDirty, setAnnouncementsDirty] = useState(false);
-  const { collapsed: collapsedSlots, toggle: toggleCollapsed } = useCollapsedShopMedia();
+  const { collapsed: collapsedSections, toggle: toggleCollapsed } = useCollapsedShopMedia();
   const { collapsed: collapsedItems, toggle: toggleCollapsedItem } = useCollapsedShopMediaItems();
-
-  useEffect(() => {
-    const bySlot = new Map(shopMediaSections.map((section) => [section.slot, section] as const));
-    setSections((current) => SHOP_MEDIA_SLOTS.map((slot) => {
-      const currentSection = current.find((section) => section.slot === slot);
-      if (currentSection && dirtySlotsRef.current.has(slot)) {
-        return currentSection;
-      }
-      return toEditableSection(bySlot.get(slot), slot);
-    }));
-  }, [shopMediaSections]);
 
   useEffect(() => {
     if (announcementsDirtyRef.current) {
@@ -90,70 +72,6 @@ export default function ShopMediaPage() {
     isDetailTargetType(item.targetType)
     && item.targetId !== null
     && !targetOptionsByType[item.targetType].some((option) => option.id === item.targetId);
-
-  const setSection = (slot: 1 | 2 | 3 | 4 | 5, updater: (current: EditableSection) => EditableSection) => {
-    dirtySlotsRef.current.add(slot);
-    setDirtySlots(new Set(dirtySlotsRef.current));
-    setSections((current) => current.map((section) => section.slot === slot ? updater(section) : section));
-  };
-
-  const saveSection = async (section: EditableSection) => {
-    if (section.items.some((item) => (
-      !item.arImagePath && !item.arMobileImagePath && !item.enImagePath && !item.enMobileImagePath
-    ) || (isDetailTargetType(item.targetType) && item.targetId === null))) {
-      const validationError = new Error("أضيفي صورة واحدة على الأقل وحددي الوجهة المطلوبة لكل عنصر قبل الحفظ.");
-      setError(validationError.message);
-      showErrorToast(validationError, validationError.message);
-      return;
-    }
-    if (section.items.some(hasMissingTarget)) {
-      const missingTargetError = new Error("العنصر المرتبط بإحدى الصور محذوف. اختاري عنصرًا جديدًا قبل الحفظ.");
-      setError(missingTargetError.message);
-      showErrorToast(missingTargetError, missingTargetError.message);
-      return;
-    }
-    try {
-      setSavingSlot(section.slot);
-      setError(null);
-      await getStore().updateShopMediaSection(section.slot, {
-        status: section.status,
-        items: section.items.map((item, index) => ({
-          arImagePath: item.arImagePath || null,
-          arMobileImagePath: item.arMobileImagePath || null,
-          enImagePath: item.enImagePath || null,
-          enMobileImagePath: item.enMobileImagePath || null,
-          targetType: item.targetType,
-          targetId: isDetailTargetType(item.targetType) ? item.targetId : null,
-          sortOrder: index + 1
-        }))
-      });
-      dirtySlotsRef.current.delete(section.slot);
-      setDirtySlots(new Set(dirtySlotsRef.current));
-      toast.success("تم حفظ القسم بنجاح.");
-    } catch {
-      const saveError = new Error("تعذر حفظ القسم. حاولي مرة أخرى.");
-      setError(saveError.message);
-      showErrorToast(saveError, saveError.message);
-    } finally {
-      setSavingSlot(null);
-    }
-  };
-
-  const addItem = (slot: 1 | 2 | 3 | 4 | 5) => setSection(slot, (current) => ({
-    ...current,
-    items: [
-      ...current.items,
-      {
-        id: crypto.randomUUID(),
-        arImagePath: "",
-        arMobileImagePath: "",
-        enImagePath: "",
-        enMobileImagePath: "",
-        targetType: "offers",
-        targetId: null
-      }
-    ]
-  }));
 
   const markAnnouncementsDirty = (updater: (current: EditableAnnouncement[]) => EditableAnnouncement[]) => {
     announcementsDirtyRef.current = true;
@@ -203,29 +121,31 @@ export default function ShopMediaPage() {
     }
   };
 
-  const moveItem = (slot: 1 | 2 | 3 | 4 | 5, itemId: string, direction: -1 | 1) => setSection(slot, (current) => {
-    const index = current.items.findIndex((entry) => entry.id === itemId);
-    if (index === -1) {
-      return current;
-    }
-    const items = moveArrayItem(current.items, index, direction);
-    return items === current.items ? current : { ...current, items };
-  });
+  const tabs = [
+    { value: "layout", label: "ترتيب صفحة المتجر" },
+    { value: "announcements", label: "شريط الإعلانات" }
+  ] as const;
 
   return (
     <AdminShell
       title="وسائط المتجر"
       crumbs={[{ label: "وسائط المتجر" }]}
-      description="أقسام الصور وشريط الإعلانات في واجهة المتجر."
+      description="ترتيب أقسام صفحة المتجر وصورها، وشريط الإعلانات."
     >
       <div className="grid gap-5">
         <div className="flex flex-wrap gap-2" role="tablist" aria-label="وسائط المتجر">
-          <Button variant={tab === "images" ? "primary" : "ghost"} size="sm" role="tab" aria-selected={tab === "images"} onClick={() => setTab("images")}>
-            أقسام الصور
-          </Button>
-          <Button variant={tab === "announcements" ? "primary" : "ghost"} size="sm" role="tab" aria-selected={tab === "announcements"} onClick={() => setTab("announcements")}>
-            شريط الإعلانات
-          </Button>
+          {tabs.map((entry) => (
+            <Button
+              key={entry.value}
+              variant={tab === entry.value ? "primary" : "ghost"}
+              size="sm"
+              role="tab"
+              aria-selected={tab === entry.value}
+              onClick={() => setTab(entry.value)}
+            >
+              {entry.label}
+            </Button>
+          ))}
         </div>
 
         {tab === "announcements" ? (
@@ -244,25 +164,20 @@ export default function ShopMediaPage() {
           />
         ) : null}
 
-        {tab === "images" ? sections.map((section) => (
-          <SectionEditor
-            key={section.slot}
-            section={section}
-            isDirty={dirtySlots.has(section.slot)}
-            isSaving={savingSlot === section.slot}
-            isCollapsed={collapsedSlots.has(section.slot)}
+        {/* Kept mounted while hidden so unsaved layout edits survive switching tabs. */}
+        <div hidden={tab !== "layout"}>
+          <ShopLayoutEditor
+            storedBlocks={shopPageBlocks ?? []}
+            categories={categories}
             canEdit={canEdit}
-            collapsedItems={collapsedItems}
             targetOptionsByType={targetOptionsByType}
-            toggleCollapsed={toggleCollapsed}
-            toggleCollapsedItem={toggleCollapsedItem}
-            setSection={setSection}
-            saveSection={saveSection}
-            addItem={addItem}
-            moveItem={moveItem}
             hasMissingTarget={hasMissingTarget}
+            collapsedSections={collapsedSections}
+            toggleCollapsedSection={toggleCollapsed}
+            collapsedItems={collapsedItems}
+            toggleCollapsedItem={toggleCollapsedItem}
           />
-        )) : null}
+        </div>
 
         {error ? <Alert tone="danger">{error}</Alert> : null}
       </div>

@@ -1,6 +1,9 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { createElement } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+/** The page layout the next render loads; each test may set its own. */
+const page = vi.hoisted(() => ({ layout: [] as any[] }));
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: any) => createElement("a", { href, ...rest }, children)
@@ -74,7 +77,11 @@ vi.mock("@/lib/storefront-page-context", () => ({
 }));
 
 vi.mock("@/lib/storefront-static-data", () => ({
-  loadShopPageData: async () => ({
+  loadShopPageData: async () => shopData()
+}));
+
+function shopData() {
+  const data = {
     products: [
       {
         id: 1,
@@ -107,7 +114,12 @@ vi.mock("@/lib/storefront-static-data", () => ({
         status: "active",
         createdAt: "",
         updatedAt: ""
-      }
+      },
+      // Body (21) and its sub-category Oils (24) hold these two; nothing is in Face (23).
+      { id: 3, slug: "body-lotion", name: { ar: "لوشن", en: "Body Lotion" }, imagePath: "/uploads/lotion.jpg", price: 90, categoryId: 21,
+        variants: [], stock: 5, isNew: false, isBestseller: false, status: "active", createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "" },
+      { id: 4, slug: "argan-oil", name: { ar: "زيت", en: "Argan Oil" }, imagePath: "/uploads/oil.jpg", price: 70, categoryId: 24,
+        variants: [], stock: 5, isNew: false, isBestseller: false, status: "active", createdAt: "2026-03-01T00:00:00.000Z", updatedAt: "" }
     ],
     offers: [
       {
@@ -149,10 +161,10 @@ vi.mock("@/lib/storefront-static-data", () => ({
       { id: 25, parentId: null, slug: "empty", name: { ar: "فارغ", en: "Empty" }, enShopImagePath: "/uploads/empty.jpg", hasProducts: false, isLeaf: true }
     ],
     advices: [],
-    shopMediaSections: [
+    // Picture sections 10-14, placed by the layout.
+    pictureSections: [
       {
         id: 10,
-        slot: 1,
         status: "active",
         items: [
           {
@@ -170,7 +182,6 @@ vi.mock("@/lib/storefront-static-data", () => ({
       },
       {
         id: 11,
-        slot: 2,
         status: "active",
         items: [
           {
@@ -188,7 +199,6 @@ vi.mock("@/lib/storefront-static-data", () => ({
       },
       {
         id: 12,
-        slot: 3,
         status: "active",
         items: [
           {
@@ -206,7 +216,6 @@ vi.mock("@/lib/storefront-static-data", () => ({
       },
       {
         id: 13,
-        slot: 4,
         status: "active",
         items: [
           {
@@ -224,7 +233,6 @@ vi.mock("@/lib/storefront-static-data", () => ({
       },
       {
         id: 14,
-        slot: 5,
         status: "active",
         items: [
           {
@@ -259,13 +267,34 @@ vi.mock("@/lib/storefront-static-data", () => ({
         updatedAt: ""
       }
     ]
-  })
-}));
+  };
+  const sections = new Map(data.pictureSections.map((section) => [section.id, section] as const));
+  return {
+    ...data,
+    layout: page.layout.map((block, index) => (
+      typeof block === "number" ? { id: 100 + index, type: "media", categoryId: null, mediaSection: sections.get(block), sortOrder: index + 1 }
+        : typeof block === "string" ? { id: 100 + index, type: block, categoryId: null, mediaSection: null, sortOrder: index + 1 }
+          : { id: 100 + index, type: "category", categoryId: block.category, mediaSection: null, sortOrder: index + 1 }
+    ))
+  };
+}
+
+/** Today's shop page: picture 1, category tiles, offers, picture 2, collections, picture 3, bestsellers, picture 4, new, picture 5. */
+const TODAYS_LAYOUT = [10, "category_tiles", "offers", 11, "collections", 12, "bestsellers", 13, "new", 14];
+
+/** The section headings, in page order. */
+function headingsInOrder() {
+  return screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
+}
 
 import ShopPage from "@/app/[lang]/shop/page";
 import { useCardSliderScreen } from "../helpers/media-query";
 
 describe("shop page", () => {
+  beforeEach(() => {
+    page.layout = TODAYS_LAYOUT;
+  });
+
   it("keeps its cards free of the image swipe, so a sideways swipe scrolls the row", async () => {
     useCardSliderScreen();
     render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
@@ -339,5 +368,54 @@ describe("shop page", () => {
 
     const offers = screen.getByRole("heading", { name: "Offers" });
     expect(row.compareDocumentPosition(offers) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("draws the sections in the order the ERP saved", async () => {
+    page.layout = ["new", 11, "offers", "bestsellers", "collections"];
+    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+
+    expect(headingsInOrder()).toEqual(["New", "Offers", "Best Seller", "Collections"]);
+    const picture = container.querySelector('[data-viewport="desktop"] [data-slide] img');
+    expect(picture).toHaveAttribute("src", "http://localhost:4000/uploads/section-2.jpg");
+    // A picture section leads the page only when it is first; here New comes before it.
+    expect(screen.getByRole("heading", { name: "New" }).compareDocumentPosition(picture!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("leaves out a built-in section the ERP removed", async () => {
+    page.layout = ["offers", "new"];
+    render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+
+    expect(headingsInOrder()).toEqual(["Offers", "New"]);
+    expect(screen.queryByRole("heading", { name: "Collections" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Categories" })).toBeNull();
+    expect(screen.queryAllByRole("link", { name: "Featured media 1" })).toHaveLength(0);
+    // The advices stay at the bottom whatever the layout.
+    expect(screen.getByText("Advice")).toBeInTheDocument();
+  });
+
+  it("shows a category section as the category's newest products, its sub-categories included, with a link to the category", async () => {
+    page.layout = ["offers", { category: 21 }];
+    render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+
+    const section = screen.getByRole("region", { name: "Body" });
+    expect(within(section).getAllByText(/^(Argan Oil|Body Lotion)$/).map((card) => card.textContent)).toEqual(["Argan Oil", "Body Lotion"]);
+    expect(within(section).getByRole("link", { name: "All products" })).toHaveAttribute("href", "/en/category/body?categoryId=21");
+    expect(headingsInOrder()).toEqual(["Offers", "Body"]);
+  });
+
+  it("leaves out a category section that has no products", async () => {
+    page.layout = [{ category: 23 }, "offers"];
+    render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+
+    expect(screen.queryByRole("region", { name: "Face" })).toBeNull();
+    expect(headingsInOrder()).toEqual(["Offers"]);
+  });
+
+  it("loads the first picture section's image first, wherever it sits", async () => {
+    page.layout = ["offers", 12, "new", 13];
+    const { container } = render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+    const images = container.querySelectorAll('[data-viewport="desktop"] [data-slide] img');
+
+    expect(Array.from(images).map((image) => image.getAttribute("data-priority"))).toEqual(["true", "false"]);
   });
 });

@@ -30,6 +30,7 @@ import {
   reviews,
   shopMediaSectionItems,
   shopMediaSections,
+  shopPageBlocks,
   wishlists
 } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
@@ -63,6 +64,7 @@ export async function resetApiTestDatabase() {
   await db.delete(adminUserPermissions);
   await db.delete(adminUsers);
   await db.delete(permissions);
+  await db.delete(shopPageBlocks);
   await db.delete(shopMediaSectionItems);
   await db.delete(shopMediaSections);
   await clearTestSeed();

@@ -1,4 +1,4 @@
-import type { ShopMediaTargetType } from "@capella/shared";
+import type { ShopMediaTargetType, ShopPageBuiltInBlockType } from "@capella/shared";
 
 export type EditableItem = {
   id: string;
@@ -10,11 +10,18 @@ export type EditableItem = {
   targetId: number | null;
 };
 
+/** A picture section being edited. `key` tells sections apart on the page. */
 export type EditableSection = {
-  slot: 1 | 2 | 3 | 4 | 5;
+  key: string;
   status: "active" | "inactive";
   items: EditableItem[];
 };
+
+/** One section of the shop page layout while it is edited. */
+export type EditableShopBlock =
+  | { key: string; type: ShopPageBuiltInBlockType }
+  | { key: string; type: "category"; categoryId: number | null }
+  | { key: string; type: "media"; mediaSectionId: number | null; section: EditableSection };
 
 export type EditableAnnouncement = {
   id: string;

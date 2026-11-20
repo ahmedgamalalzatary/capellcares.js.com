@@ -477,6 +477,13 @@
       "when": 1794082470765,
       "tag": "0067_category_shop_images",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "5",
+      "when": 1795180775467,
+      "tag": "0068_shop_page_blocks",
+      "breakpoints": true
     }
   ]
 }

@@ -59,7 +59,6 @@ function getDesktopCarousel(container: HTMLElement) {
 function makeSection(itemCount: number): ShopMediaSection {
   return {
     id: 1,
-    slot: 1,
     status: "active",
     items: Array.from({ length: itemCount }, (_, i) => ({
       id: i + 1,

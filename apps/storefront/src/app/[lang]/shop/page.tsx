@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { getDict, pickLang } from "@capella/shared";
 import { AdviceSection } from "@/components/products/advice-section";
 import { ProductCard } from "@/components/products/product-card";
 import { ShopMediaStrip } from "@/components/shop/shop-media-strip";
 import { SectionCard } from "@/components/shop/section-card";
-import { ShopCardRow } from "@/components/shop/shop-card-row";
 import { ShopCategoryRow } from "@/components/shop/shop-category-row";
+import { ShopRowSection } from "@/components/shop/shop-row-section";
+import { buildCategoryHref } from "@/lib/category-links";
+import { pickCategoryRowProducts } from "@/lib/shop-category-section";
 import { resolveStorefrontLang } from "@/lib/storefront-page-context";
 import { loadShopPageData } from "@/lib/storefront-static-data";
 import { buildShopMetadata } from "@/lib/seo";
@@ -23,9 +24,8 @@ export async function generateMetadata({
 export default async function ShopPage({ params }: { params: Promise<{ lang: string }> }) {
   const lang = await resolveStorefrontLang(params);
   const dict = getDict(lang);
-  const isAr = lang === "ar";
 
-  const { products, offers, collections, categories, advices, shopMediaSections } = await loadShopPageData(lang);
+  const { products, offers, collections, categories, advices, layout } = await loadShopPageData(lang);
 
   const activeOffers = offers.filter((o) => o.status === "active" && !o.deletedAt);
   const activeCollections = collections.filter(
@@ -35,170 +35,92 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
   const newProducts = activeProducts.filter((p) => p.isNew);
   const bestsellerProducts = activeProducts.filter((p) => p.isBestseller);
   // Active categories only: a card must never name a category the shop has deleted — the same rule the offers/collections grids apply.
-  const categoryNameById = new Map(
-    categories.filter((c) => !c.deletedAt).map((c) => [c.id, pickLang(c.name, lang)] as const)
+  const liveCategories = categories.filter((c) => !c.deletedAt);
+  const categoryById = new Map(liveCategories.map((c) => [c.id, c] as const));
+  const categoryNameById = new Map(liveCategories.map((c) => [c.id, pickLang(c.name, lang)] as const));
+  const productCard = (product: (typeof products)[number]) => (
+    <ProductCard key={product.id} product={product} lang={lang} dict={dict} categoryName={categoryNameById.get(product.categoryId)} />
   );
-  const shopMediaBySlot = new Map(shopMediaSections.map((section) => [section.slot, section] as const));
+  // The first picture section on the page loads its image first, as the top banner always has.
+  const firstPictureBlockId = layout.find((block) => block.type === "media")?.id;
 
   return (
     <main className="container">
-
-      <ShopMediaStrip
-        lang={lang}
-        section={shopMediaBySlot.get(1) ?? { id: -1, slot: 1, status: "inactive", items: [] }}
-        label={dict.shopMedia.sectionLabel}
-        flatTop
-        priority
-      />
-
-      {/* Main categories with a shop picture, between the first picture section and offers */}
-      <ShopCategoryRow categories={categories} lang={lang} title={dict.shop.categories} />
-
-      {/* Offers */}
-      {activeOffers.length > 0 && (
-        <section className="mb-8">
-          <header className="mb-6 flex items-end justify-between">
-            <div className="grid gap-1.5 font-bold uppercase">
-              <h2 className={isAr
-                ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
-                : "m-0 text-[clamp(24px,2.4vw,36px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
-                {dict.offers.title}
-              </h2>
-            </div>
-            <Link
-              href={`/${lang}/offers`}
-              className={`shrink-0 text-sm text-accent underline-offset-4 hover:underline ${isAr ? "" : "uppercase tracking-[0.08em]"}`}
-            >
-              {dict.shop.viewAllOffers}
-            </Link>
-          </header>
-
-          <ShopCardRow lang={lang}>
-            {activeOffers.map((offer) => (
-              <SectionCard
-                key={offer.id}
-                kind="offer"
-                data={offer}
+      {/* The sections in the order set in the ERP (Shop media → Page layout); the advices always close the page. */}
+      {layout.map((block, index) => {
+        const id = `shop-section-${block.id}`;
+        switch (block.type) {
+          case "media":
+            return (
+              <ShopMediaStrip
+                key={id}
                 lang={lang}
-                dict={dict}
-                categoryName={offer.categoryId != null ? categoryNameById.get(offer.categoryId) : undefined}
+                section={block.mediaSection}
+                label={dict.shopMedia.sectionLabel}
+                flatTop={index === 0}
+                priority={block.id === firstPictureBlockId}
               />
-            ))}
-          </ShopCardRow>
-        </section>
-      )}
-
-      <ShopMediaStrip
-        lang={lang}
-        section={shopMediaBySlot.get(2) ?? { id: -2, slot: 2, status: "inactive", items: [] }}
-        label={dict.shopMedia.sectionLabel}
-      />
-
-      {/* Collections */}
-      {activeCollections.length > 0 && (
-        <section className="mb-8">
-          <header className="mb-6 flex items-end justify-between">
-            <div className="grid gap-1.5 font-bold uppercase">
-              <h2 className={isAr
-                ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
-                : "m-0 text-[clamp(24px,2.4vw,36px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
-                {dict.collections.title}
-              </h2>
-            </div>
-            <Link
-              href={`/${lang}/collections`}
-              className={`shrink-0 text-sm text-accent underline-offset-4 hover:underline ${isAr ? "" : "uppercase tracking-[0.08em]"}`}
-            >
-              {dict.shop.viewAllCollections}
-            </Link>
-          </header>
-
-          <ShopCardRow lang={lang}>
-            {activeCollections.map((collection) => (
-              <SectionCard
-                key={collection.id}
-                kind="collection"
-                data={collection}
-                lang={lang}
-                dict={dict}
-                categoryName={categoryNameById.get(collection.categoryId)}
-              />
-            ))}
-          </ShopCardRow>
-        </section>
-      )}
-
-      <ShopMediaStrip
-        lang={lang}
-        section={shopMediaBySlot.get(3) ?? { id: -3, slot: 3, status: "inactive", items: [] }}
-        label={dict.shopMedia.sectionLabel}
-      />
-
-      {/* Bestsellers */}
-      {bestsellerProducts.length > 0 && (
-        <section className="mb-8">
-          <header className="mb-6 flex items-end justify-between">
-            <div className="grid gap-1.5 font-bold uppercase">
-              <h2 className={isAr
-                ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
-                : "m-0 text-[clamp(24px,2.4vw,36px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
-                {dict.shop.bestsellers}
-              </h2>
-            </div>
-            <Link
-              href={`/${lang}/bestsellers`}
-              className={`shrink-0 text-sm text-(--ink-2) underline-offset-4 hover:underline hover:text-ink ${isAr ? "" : "uppercase tracking-[0.08em]"}`}
-            >
-              {dict.shop.viewAllProducts}
-            </Link>
-          </header>
-
-          <ShopCardRow lang={lang}>
-            {bestsellerProducts.map((product) => (
-              <ProductCard key={product.id} product={product} lang={lang} dict={dict} categoryName={categoryNameById.get(product.categoryId)} />
-            ))}
-          </ShopCardRow>
-        </section>
-      )}
-
-      <ShopMediaStrip
-        lang={lang}
-        section={shopMediaBySlot.get(4) ?? { id: -4, slot: 4, status: "inactive", items: [] }}
-        label={dict.shopMedia.sectionLabel}
-      />
-
-      {/* New */}
-      {newProducts.length > 0 && (
-        <section className="mb-8">
-          <header className="mb-6 flex items-end justify-between">
-            <div className="grid gap-1.5 font-bold uppercase">
-              <h2 className={isAr
-                ? "m-0 text-[clamp(22px,2.2vw,32px)] font-bold font-(family-name:--font-ar) leading-tight text-ink"
-                : "m-0 text-[clamp(24px,2.4vw,36px)] font-(--font-display) leading-[1.1] tracking-[-0.005em] text-ink"}>
-                {dict.shop.newProducts}
-              </h2>
-            </div>
-            <Link
-              href={`/${lang}/new`}
-              className={`shrink-0 text-sm text-accent underline-offset-4 hover:underline ${isAr ? "" : "uppercase tracking-[0.08em]"}`}
-            >
-              {dict.shop.viewAllProducts}
-            </Link>
-          </header>
-
-          <ShopCardRow lang={lang}>
-            {newProducts.map((product) => (
-              <ProductCard key={product.id} product={product} lang={lang} dict={dict} categoryName={categoryNameById.get(product.categoryId)} />
-            ))}
-          </ShopCardRow>
-        </section>
-      )}
-
-      <ShopMediaStrip
-        lang={lang}
-        section={shopMediaBySlot.get(5) ?? { id: -5, slot: 5, status: "inactive", items: [] }}
-        label={dict.shopMedia.sectionLabel}
-      />
+            );
+          case "category_tiles":
+            return <ShopCategoryRow key={id} categories={categories} lang={lang} title={dict.shop.categories} />;
+          case "offers":
+            return activeOffers.length > 0 ? (
+              <ShopRowSection key={id} id={id} title={dict.offers.title} viewAll={{ href: `/${lang}/offers`, label: dict.shop.viewAllOffers }} lang={lang}>
+                {activeOffers.map((offer) => (
+                  <SectionCard
+                    key={offer.id}
+                    kind="offer"
+                    data={offer}
+                    lang={lang}
+                    dict={dict}
+                    categoryName={offer.categoryId != null ? categoryNameById.get(offer.categoryId) : undefined}
+                  />
+                ))}
+              </ShopRowSection>
+            ) : null;
+          case "collections":
+            return activeCollections.length > 0 ? (
+              <ShopRowSection key={id} id={id} title={dict.collections.title} viewAll={{ href: `/${lang}/collections`, label: dict.shop.viewAllCollections }} lang={lang}>
+                {activeCollections.map((collection) => (
+                  <SectionCard
+                    key={collection.id}
+                    kind="collection"
+                    data={collection}
+                    lang={lang}
+                    dict={dict}
+                    categoryName={categoryNameById.get(collection.categoryId)}
+                  />
+                ))}
+              </ShopRowSection>
+            ) : null;
+          case "bestsellers":
+            return bestsellerProducts.length > 0 ? (
+              <ShopRowSection key={id} id={id} title={dict.shop.bestsellers} viewAll={{ href: `/${lang}/bestsellers`, label: dict.shop.viewAllProducts }} mutedLink lang={lang}>
+                {bestsellerProducts.map(productCard)}
+              </ShopRowSection>
+            ) : null;
+          case "new":
+            return newProducts.length > 0 ? (
+              <ShopRowSection key={id} id={id} title={dict.shop.newProducts} viewAll={{ href: `/${lang}/new`, label: dict.shop.viewAllProducts }} lang={lang}>
+                {newProducts.map(productCard)}
+              </ShopRowSection>
+            ) : null;
+          case "category": {
+            const category = categoryById.get(block.categoryId);
+            const rowProducts = category ? pickCategoryRowProducts(category.id, liveCategories, activeProducts) : [];
+            if (!category || rowProducts.length === 0) {
+              return null;
+            }
+            return (
+              <ShopRowSection key={id} id={id} title={pickLang(category.name, lang)} viewAll={{ href: buildCategoryHref(lang, category), label: dict.shop.viewAllProducts }} lang={lang}>
+                {rowProducts.map(productCard)}
+              </ShopRowSection>
+            );
+          }
+          default:
+            return null;
+        }
+      })}
 
       {/* Capella Advices */}
       <AdviceSection advices={advices} lang={lang} dict={dict} />

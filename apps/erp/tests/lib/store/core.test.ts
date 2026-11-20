@@ -187,13 +187,14 @@ describe("ERP store", () => {
           }]
         };
       }
-      if (path === "/api/erp/shop-media-sections") {
+      if (path === "/api/erp/shop-layout") {
         return {
-          items: [{
-            id: 1,
-            slot: 1,
-            status: "active",
-            items: [{
+          items: [{ id: 1, type: "offers", categoryId: null, mediaSection: null, sortOrder: 1 }, {
+            id: 2,
+            type: "media",
+            categoryId: null,
+            sortOrder: 2,
+            mediaSection: { id: 1, status: "active", items: [{
               id: 10,
               arImagePath: null,
               arMobileImagePath: null,
@@ -202,7 +203,7 @@ describe("ERP store", () => {
               targetType: "offers",
               targetId: null,
               sortOrder: 1
-            }]
+            }] }
           }]
         };
       }
@@ -217,7 +218,7 @@ describe("ERP store", () => {
 
     await store.refetch();
 
-    expect((store as any).shopMediaSections).toHaveLength(1);
+    expect((store as any).shopPageBlocks.map((block: any) => block.type)).toEqual(["offers", "media"]);
     expect((store as any).announcements).toHaveLength(1);
   });
 

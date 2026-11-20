@@ -45,7 +45,8 @@ test("async cart/wishlist/content routes return safe 500 responses when the data
     for (const [method, path, body] of [
       ["GET", "/cart", undefined], ["PUT", "/cart", { lines: [] }],
       ["GET", "/wishlist", undefined], ["POST", "/wishlist", { entityType: "product", entityId: 1 }],
-      ["DELETE", "/wishlist/product/1", undefined], ["GET", "/advices", undefined], ["GET", "/shop-media-sections", undefined]
+      ["DELETE", "/wishlist/product/1", undefined], ["GET", "/advices", undefined], ["GET", "/shop-media-sections", undefined],
+      ["GET", "/shop-layout", undefined]
     ] as const) {
       const result = await send(server, method, `/api/v1${path}`, { authorization: `Bearer ${token}` }, body);
       assert.equal(result.status, 500, path);
@@ -84,8 +85,8 @@ test("async ERP advice and shop-media routes return safe 500 responses when the 
       ["POST", "/advices", { title: { ar: "نصيحة", en: "Advice" }, description: { ar: "وصف", en: "Text" }, videoUrl: "https://www.youtube.com/watch?v=capella", status: "active" }],
       ["POST", "/advices/1/toggle-status", undefined],
       ["DELETE", "/advices/1", undefined],
-      ["GET", "/shop-media-sections", undefined],
-      ["POST", "/shop-media-sections/1", { status: "active", items: [] }]
+      ["GET", "/shop-layout", undefined],
+      ["PUT", "/shop-layout", { blocks: [{ type: "offers" }] }]
     ] as const) {
       passThrough = 1;
       const result = await send(server, method, `/api/erp${path}`, headers, body);

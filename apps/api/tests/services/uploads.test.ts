@@ -133,8 +133,7 @@ test("deleteLocalUploadUrls preserves files referenced by shop media", async () 
   mkdirSync(uploadsDir, { recursive: true });
   writeFileSync(absolutePath, "shop-media");
 
-  await db.delete(shopMediaSections).where(eq(shopMediaSections.slot, 99));
-  const [section] = await db.insert(shopMediaSections).values({ slot: 99, status: "inactive" }).$returningId();
+  const [section] = await db.insert(shopMediaSections).values({ status: "inactive" }).$returningId();
   try {
     await db.insert(shopMediaSectionItems).values({
       sectionId: section.id,

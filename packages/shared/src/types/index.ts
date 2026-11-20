@@ -345,14 +345,24 @@ export interface ShopMediaSectionItem {
   updatedAt?: string;
 }
 
+/** A picture section. Its place on the shop page is its ShopPageBlock. */
 export interface ShopMediaSection {
   id: number;
-  slot: 1 | 2 | 3 | 4 | 5;
   status: "active" | "inactive";
   items: ShopMediaSectionItem[];
   createdAt?: string;
   updatedAt?: string;
 }
+
+/** The shop page's built-in sections, in the order a shop that never set its layout shows them. Each appears at most once. */
+export const SHOP_PAGE_BUILT_IN_BLOCK_TYPES = ["category_tiles", "offers", "collections", "bestsellers", "new"] as const;
+export type ShopPageBuiltInBlockType = (typeof SHOP_PAGE_BUILT_IN_BLOCK_TYPES)[number];
+
+/** One section of the shop page, in the order they show: a built-in section, a category's product row, or a picture section. */
+export type ShopPageBlock =
+  | { id: number; type: ShopPageBuiltInBlockType; categoryId: null; mediaSection: null; sortOrder: number }
+  | { id: number; type: "category"; categoryId: number; mediaSection: null; sortOrder: number }
+  | { id: number; type: "media"; categoryId: null; mediaSection: ShopMediaSection; sortOrder: number };
 
 export interface Announcement {
   id: number;
