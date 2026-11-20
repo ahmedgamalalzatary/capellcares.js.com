@@ -12,6 +12,7 @@ import {
   paymentSummaryQuerySchema,
   listCustomerOrdersRepo,
   OrderNotFoundError,
+  resolvePromoFreeReviewRepo,
   updateOrderPaymentStatusRepo
 } from "./order.repository.js";
 import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.js";
@@ -77,6 +78,16 @@ export async function updateOrderPaymentStatusController(req: AuthenticatedReque
     }
     throw error;
   }
+  return res.json({ ok: true });
+}
+
+/** Staff have reviewed an order a promo code made free, and it can go out. */
+export async function resolvePromoFreeReviewController(req: AuthenticatedRequest, res: Response) {
+  const id = parsePositiveId(req.params.id);
+  if (id == null) return res.status(400).json({ message: "Invalid order id" });
+  const result = await resolvePromoFreeReviewRepo(id);
+  if (result === "not_found") return res.status(404).json({ message: "Order not found" });
+  if (result === "not_open") return res.status(409).json({ message: "This order has no open free-order review" });
   return res.json({ ok: true });
 }
 

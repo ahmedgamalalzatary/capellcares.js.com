@@ -104,7 +104,8 @@ test("erp orders list searches code, name, email and phone, with wildcards taken
     { code: "FIND-1", name: "Nour Hassan" },
     { code: "FIND-2", email: "mona@example.com" },
     { code: "FIND-3", phone: "01155554444" },
-    { code: "FIND-4", name: "100% Real" }
+    { code: "FIND-4", name: "100% Real" },
+    { code: "FIND-5", phone: "+96566778899" }
   ]);
 
   await withTestServer(app, async (request) => {
@@ -115,6 +116,10 @@ test("erp orders list searches code, name, email and phone, with wildcards taken
     assert.deepEqual(await search("5555"), ["FIND-3"]);
     assert.deepEqual(await search("FIND-2"), ["FIND-2"]);
     assert.deepEqual(await search("100%"), ["FIND-4"]);
+    // Phones are stored as +965…; staff type them the local way, whole or in part.
+    assert.deepEqual(await search("66778899"), ["FIND-5"]);
+    assert.deepEqual(await search("6677"), ["FIND-5"]);
+    assert.deepEqual(await search("+96566778899"), ["FIND-5"]);
   });
 });
 

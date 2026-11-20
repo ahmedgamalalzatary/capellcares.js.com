@@ -639,6 +639,15 @@ export const orders = mysqlTable("orders", {
   /** Part of totalAmount; frozen at checkout so later rate changes never touch old orders. */
   deliveryFee: decimal("delivery_fee", { precision: 10, scale: 3 }).notNull().default("0"),
   totalAmount: decimal("total_amount", { precision: 10, scale: 3 }).notNull(),
+  // The promo code this order used (docs/promo-codes-spec.md section 8.6): which code, its rules as applied, and the money it moved, in fils.
+  promoCodeId: int("promo_code_id"),
+  promoCodeText: varchar("promo_code_text", { length: 64 }),
+  promoSnapshot: text("promo_snapshot"),
+  promoDiscountFils: int("promo_discount_fils").notNull().default(0),
+  /** The delivery fee the store absorbs because the code made delivery free. */
+  promoShippingWaivedFils: int("promo_shipping_waived_fils").notNull().default(0),
+  /** A code brought this order to 0: staff review it before sending it (spec section 5.5). Null for every other order. */
+  promoFreeReview: mysqlEnum("promo_free_review", ["open", "resolved"]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 }, (table) => ({
@@ -675,6 +684,10 @@ export const orderItems = mysqlTable("order_items", {
   snapshotDiscountValue: decimal("snapshot_discount_value", { precision: 10, scale: 3 }),
   snapshotDiscountStartsAt: datetime("snapshot_discount_starts_at"),
   snapshotDiscountEndsAt: datetime("snapshot_discount_ends_at"),
+  // Promo code share of this line: unitPrice stays the original price and lineTotal is what was actually paid (docs/promo-codes-spec.md section 4.3).
+  promoDiscountAmount: decimal("promo_discount_amount", { precision: 10, scale: 3 }),
+  promoReplacedDiscountId: int("promo_replaced_discount_id"),
+  isPromoGift: boolean("is_promo_gift").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
 });
@@ -775,3 +788,86 @@ export const reviewPromptStates = mysqlTable(
     )
   })
 );
+
+// Promo codes (docs/promo-codes-spec.md section 8). Rule columns are written once; only status changes after creation.
+// Amounts are Kuwaiti dinars with 3 decimals, like every other price in this store.
+export const promoCodes = mysqlTable("promo_codes", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 64 }).notNull(),
+  codeNormalized: varchar("code_normalized", { length: 64 }).notNull().unique(),
+  arName: varchar("ar_name", { length: 255 }).notNull(),
+  enName: varchar("en_name", { length: 255 }).notNull(),
+  status: mysqlEnum("status", ["active", "paused", "stopped"]).notNull().default("active"),
+  startsAt: datetime("starts_at").notNull(),
+  endsAt: datetime("ends_at"),
+  discountType: mysqlEnum("discount_type", ["percentage", "fixed"]),
+  discountValue: decimal("discount_value", { precision: 10, scale: 3 }),
+  maxDiscountAmount: decimal("max_discount_amount", { precision: 10, scale: 3 }),
+  freeShipping: boolean("free_shipping").notNull().default(false),
+  giftItemType: mysqlEnum("gift_item_type", ["product_variant", "offer", "collection"]),
+  giftItemId: int("gift_item_id"),
+  giftQty: int("gift_qty"),
+  eligibilityScope: mysqlEnum("eligibility_scope", ["all", "selected"]).notNull().default("all"),
+  minOrderAmount: decimal("min_order_amount", { precision: 10, scale: 3 }),
+  maxOrderAmount: decimal("max_order_amount", { precision: 10, scale: 3 }),
+  minEligiblePieces: int("min_eligible_pieces"),
+  maxDiscountedPieces: int("max_discounted_pieces"),
+  totalUsageLimit: int("total_usage_limit"),
+  perCustomerLimit: int("per_customer_limit"),
+  firstOrderOnly: boolean("first_order_only").notNull().default(false),
+  isPrivate: boolean("is_private").notNull().default(false),
+  showInAccount: boolean("show_in_account").notNull().default(false),
+  createdByAdminId: int("created_by_admin_id").references(() => adminUsers.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+}, (table) => ({
+  statusIndex: index("promo_codes_status_idx").on(table.status, table.startsAt)
+}));
+
+export const promoCodeTargets = mysqlTable("promo_code_targets", {
+  id: int("id").autoincrement().primaryKey(),
+  promoCodeId: int("promo_code_id").notNull().references(() => promoCodes.id, { onDelete: "cascade" }),
+  targetType: mysqlEnum("target_type", ["category", "product", "variant", "offer", "collection"]).notNull(),
+  targetId: int("target_id").notNull(),
+  mode: mysqlEnum("mode", ["include", "exclude"]).notNull()
+}, (table) => ({
+  targetUnique: unique("promo_code_targets_unique").on(table.promoCodeId, table.targetType, table.targetId, table.mode)
+}));
+
+export const promoCodeCustomers = mysqlTable("promo_code_customers", {
+  id: int("id").autoincrement().primaryKey(),
+  promoCodeId: int("promo_code_id").notNull().references(() => promoCodes.id, { onDelete: "cascade" }),
+  customerId: int("customer_id").notNull().references(() => customers.id, { onDelete: "cascade" })
+}, (table) => ({
+  pairUnique: unique("promo_code_customers_unique").on(table.promoCodeId, table.customerId)
+}));
+
+/** One use of a code by one order: used when the order is placed, released when the order is denied, cancelled or expires. */
+export const promoRedemptions = mysqlTable("promo_redemptions", {
+  id: int("id").autoincrement().primaryKey(),
+  promoCodeId: int("promo_code_id").notNull().references(() => promoCodes.id, { onDelete: "restrict" }),
+  customerId: int("customer_id").references(() => customers.id, { onDelete: "set null" }),
+  phoneNormalized: varchar("phone_normalized", { length: 32 }),
+  orderId: int("order_id").references(() => orders.id, { onDelete: "set null" }),
+  state: mysqlEnum("state", ["used", "released"]).notNull(),
+  releaseReason: mysqlEnum("release_reason", ["cancelled", "denied", "expired"]),
+  discountFils: int("discount_fils").notNull().default(0),
+  shippingWaivedFils: int("shipping_waived_fils").notNull().default(0),
+  giftValueFils: int("gift_value_fils").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull()
+}, (table) => ({
+  codeStateIndex: index("promo_redemptions_code_state_idx").on(table.promoCodeId, table.state),
+  codeCustomerIndex: index("promo_redemptions_code_customer_idx").on(table.promoCodeId, table.customerId),
+  codePhoneIndex: index("promo_redemptions_code_phone_idx").on(table.promoCodeId, table.phoneNormalized)
+}));
+
+export const promoCodeEvents = mysqlTable("promo_code_events", {
+  id: int("id").autoincrement().primaryKey(),
+  promoCodeId: int("promo_code_id").notNull().references(() => promoCodes.id, { onDelete: "cascade" }),
+  action: mysqlEnum("action", ["created", "paused", "resumed", "stopped"]).notNull(),
+  adminUserId: int("admin_user_id").references(() => adminUsers.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => ({
+  codeIndex: index("promo_code_events_code_idx").on(table.promoCodeId, table.createdAt)
+}));

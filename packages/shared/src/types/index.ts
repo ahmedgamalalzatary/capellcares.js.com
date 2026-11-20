@@ -437,6 +437,11 @@ export interface OrderItem {
   snapshotDiscountValue?: number | null;
   snapshotDiscountStartsAt?: string | null;
   snapshotDiscountEndsAt?: string | null;
+  /** What a promo code took off this line's original price; lineTotal is what was actually paid. */
+  promoDiscountAmount?: number | null;
+  promoReplacedDiscountId?: number | null;
+  /** The code's free item: its own line at 0. */
+  isPromoGift?: boolean;
   createdAt?: string;
   updatedAt?: string;
   review?: OrderItemReview | null;
@@ -463,6 +468,13 @@ export interface OrderSummary {
   deliveryFee: number;
   totalAmount: number;
   createdAt: string;
+  /** The promo code used on this order (its display text) and what it took off, in fils. */
+  promoCodeText?: string | null;
+  promoDiscountFils?: number;
+  /** The delivery fee the store absorbed because the code made delivery free, in fils. */
+  promoShippingWaivedFils?: number;
+  /** A code made this order free: open until staff review it (ERP only). */
+  promoFreeReview?: "open" | "resolved" | null;
   /** Present on the storefront order list (which renders item thumbnails per card) and absent on the admin list, which only needs order-level columns. */
   items?: OrderItem[];
 }

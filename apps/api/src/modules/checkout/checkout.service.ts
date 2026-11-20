@@ -1,4 +1,5 @@
 import { KW_PHONE_REGEX } from "@capella/shared/constants";
+import type { CheckoutQuoteDto } from "@capella/shared/dto";
 import { createOrderFromCheckout, quoteCheckout } from "../orders/orders.service.js";
 import type { CheckoutPayload } from "../../types/domain.js";
 
@@ -31,8 +32,30 @@ export async function submitCheckout(payload: CheckoutPayload, options: { idempo
   return createOrderFromCheckout(payload, { idempotencyKey: options.idempotencyKey.trim() });
 }
 
-/** Checkout's live price box: subtotal, delivery fee and total for the chosen area. */
-export async function quoteCheckoutTotals(payload: Pick<CheckoutPayload, "areaId" | "items">) {
-  const { subtotal, deliveryFee, total } = await quoteCheckout(payload);
-  return { subtotal, deliveryFee, total };
+/** Checkout's live price box: subtotal, delivery fee and total for the chosen area, with the promo code applied when there is one. */
+export async function quoteCheckoutTotals(
+  payload: Pick<CheckoutPayload, "areaId" | "items"> & Partial<Pick<CheckoutPayload, "promoCode" | "phone" | "customerId">>
+): Promise<CheckoutQuoteDto> {
+  const { priced, subtotal, deliveryFee, deliveryFeeWaived, total } = await quoteCheckout(payload);
+  // Without a code the answer is exactly what it was before promo codes, so older apps read it unchanged.
+  if (!payload.promoCode) return { subtotal, deliveryFee, total };
+  return {
+    subtotal,
+    deliveryFee,
+    total,
+    deliveryFeeWaived,
+    items: pricedLines(priced.items),
+    promo: priced.promo?.dto ?? null
+  };
+}
+
+/** Every priced line as the storefront shows it: what is paid, and the original price the code worked from. */
+export function pricedLines(items: Array<{ unitPrice: number; lineTotal: number; snapshotBaseUnitPrice: number | null; promoDiscountAmount?: number | null }>) {
+  return items.map((item, index) => ({
+    index,
+    unitPrice: item.unitPrice,
+    originalUnitPrice: item.snapshotBaseUnitPrice ?? item.unitPrice,
+    lineTotal: item.lineTotal,
+    promoDiscount: item.promoDiscountAmount ?? 0
+  }));
 }

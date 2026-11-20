@@ -34,16 +34,69 @@ export interface CheckoutRequestDto {
   paymentMethod: "cod";
   expectedAmountFils?: number;
   customerId?: number | null;
+  /** Promo code as typed by the customer; matched without case. */
+  promoCode?: string;
+  /** The sale replacements the customer confirmed for the code, exactly as shown; required when the code replaces a sale. */
+  promoAcceptedSales?: Array<{ item: string; previousLineTotal: number; lineTotal: number }>;
   items: CheckoutItemDto[];
 }
 
 export interface CheckoutQuoteRequestDto {
   areaId: number;
   items: CheckoutItemDto[];
+  promoCode?: string;
+  phone?: string;
 }
 
 export interface CheckoutQuoteDto {
   subtotal: number;
   deliveryFee: number;
   total: number;
+  /** The delivery fee a free-delivery code waived (deliveryFee is then 0); 0 otherwise. */
+  deliveryFeeWaived?: number;
+  /** Every line as priced, with the code applied. */
+  items?: CheckoutPricedLineDto[];
+  promo?: PromoAppliedDto | PromoRejectionDto | null;
 }
+
+/** Why a promo code cannot be used right now (docs/promo-codes-spec.md section 9.4). */
+export type PromoRejectionReason =
+  | "login_required" | "not_found" | "inactive" | "private" | "first_order" | "usage_limit" | "customer_limit"
+  | "below_min" | "above_max" | "min_pieces" | "no_effect" | "gift_unavailable";
+
+export type PromoRejectionDto = {
+  status: "rejected";
+  code: string;
+  reason: PromoRejectionReason;
+  /** below_min: KWD still missing; above_max: the code's maximum order amount; min_pieces: eligible pieces still missing. */
+  missingAmount?: number;
+  maxAmount?: number;
+  missingPieces?: number;
+};
+
+export type PromoAppliedDto = {
+  status: "applied";
+  code: string;
+  arName: string;
+  enName: string;
+  discount: number;
+  /** Sale savings the customer gives up on the pieces the code now discounts instead. */
+  saleGivenUp: number;
+  freeShipping: boolean;
+  /** Lines whose sale the code replaced: the customer confirms these new prices before applying the code.
+   * `item` identifies what was bought on that line (e.g. "product_variant:12"), so a confirmation covers that item only. */
+  replacedSales: Array<{ index: number; item?: string; nameAr: string; nameEn: string; previousLineTotal: number; lineTotal: number }>;
+  /** The free item the code adds (its own line at 0); value is its normal price for the quantity given. */
+  gift?: { nameAr: string; nameEn: string; qty: number; value: number } | null;
+  /** The code has a gift, but it is out of stock: the rest of the code still applies. */
+  giftUnavailable?: boolean;
+};
+
+export type CheckoutPricedLineDto = { index: number; unitPrice: number; originalUnitPrice: number; lineTotal: number; promoDiscount: number };
+
+/** The cart as the server prices it: every line, the products total and the promo code outcome. */
+export type CheckoutPriceResponseDto = {
+  items: CheckoutPricedLineDto[];
+  productsTotal: number;
+  promo: PromoAppliedDto | PromoRejectionDto | null;
+};

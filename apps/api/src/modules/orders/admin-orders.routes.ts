@@ -5,6 +5,7 @@ import {
   getAdminOrderController,
   getAdminOrderPaymentSummaryController,
   listAdminOrdersController,
+  resolvePromoFreeReviewController,
   updateOrderPaymentStatusController
 } from "./orders.controller.js";
 
@@ -13,3 +14,4 @@ adminOrdersRoutes.get("/", requireErpPermission("orders.read"), wrapAsync(listAd
 adminOrdersRoutes.get("/payment-summary", requireErpPermission("orders.read"), wrapAsync(getAdminOrderPaymentSummaryController));
 adminOrdersRoutes.get("/:id", requireErpPermission("orders.read"), wrapAsync(getAdminOrderController));
 adminOrdersRoutes.post("/:id/payment-status", requireErpPermission("orders.update_payment_status"), wrapAsync(updateOrderPaymentStatusController));
+adminOrdersRoutes.post("/:id/promo-review", requireErpPermission("orders.update_payment_status"), wrapAsync(resolvePromoFreeReviewController));

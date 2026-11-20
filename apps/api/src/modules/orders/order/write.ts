@@ -2,6 +2,7 @@ import { db } from "@capella/database/src/db";
 import { collectionItems, offerItems, orderItems, orders, productVariants } from "@capella/database/drizzle/schema";
 import { and, eq, gt, gte, lte, sql } from "drizzle-orm";
 import { allowedPaymentStatuses, generateOrderCode, generatePendingOrderCode } from "./shared.js";
+import { lockAndRecheckPromo, recordPromoUse, releasePromoUse, type PromoApplication } from "../../promos/promo-checkout.js";
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export class DeniedOrderLockedError extends Error {
@@ -36,6 +37,10 @@ interface OrderItem {
   snapshotDiscountValue?: number | null;
   snapshotDiscountStartsAt?: string | null;
   snapshotDiscountEndsAt?: string | null;
+  promoDiscountAmount?: number | null;
+  promoReplacedDiscountId?: number | null;
+  /** The code's free item (spec section 4.4): its own line at 0. */
+  isPromoGift?: boolean;
 }
 
 /** Atomically decrements variant stock only if enough is available. */
@@ -161,10 +166,15 @@ export async function createOrderWithItems(input: {
     codExpiresAt?: Date | null;
     deliveryFee?: number;
     totalAmount: number;
+    /** The delivery fee a free-delivery code waived, in fils. */
+    promoShippingWaivedFils?: number;
   };
   items: OrderItem[];
+  /** The promo code this order uses; re-checked and counted under the code's row lock in this same transaction. */
+  promo?: PromoApplication | null;
 }) {
   return db.transaction(async (tx) => {
+    if (input.promo) await lockAndRecheckPromo(tx, input.promo);
     for (const item of input.items) {
       if (item.itemType === "offer") {
         if (item.offerId == null) {
@@ -211,7 +221,15 @@ export async function createOrderWithItems(input: {
       ...input.order,
       orderCode: generatePendingOrderCode(),
       deliveryFee: sql`${input.order.deliveryFee ?? 0}`,
-      totalAmount: sql`${input.order.totalAmount}`
+      totalAmount: sql`${input.order.totalAmount}`,
+      ...(input.promo ? {
+        promoCodeId: input.promo.codeId,
+        promoCodeText: input.promo.codeText,
+        promoSnapshot: input.promo.snapshot,
+        promoDiscountFils: input.promo.discountFils,
+        // A code that brings the whole order to 0 is allowed, but staff look at it before sending it (spec section 5.5).
+        promoFreeReview: input.order.totalAmount === 0 ? "open" as const : null
+      } : {})
     }).$returningId();
 
     const orderCode = generateOrderCode(order.id);
@@ -242,9 +260,14 @@ export async function createOrderWithItems(input: {
         snapshotDiscountType: item.snapshotDiscountType ?? null,
         snapshotDiscountValue: item.snapshotDiscountValue == null ? null : sql`${item.snapshotDiscountValue}`,
         snapshotDiscountStartsAt: item.snapshotDiscountStartsAt == null ? null : new Date(item.snapshotDiscountStartsAt),
-        snapshotDiscountEndsAt: item.snapshotDiscountEndsAt == null ? null : new Date(item.snapshotDiscountEndsAt)
+        snapshotDiscountEndsAt: item.snapshotDiscountEndsAt == null ? null : new Date(item.snapshotDiscountEndsAt),
+        promoDiscountAmount: item.promoDiscountAmount == null ? null : sql`${item.promoDiscountAmount}`,
+        promoReplacedDiscountId: item.promoReplacedDiscountId ?? null,
+        isPromoGift: item.isPromoGift === true
       }))
     );
+
+    if (input.promo) await recordPromoUse(tx, input.promo, order.id, input.order.promoShippingWaivedFils ?? 0);
 
     return { id: order.id, orderCode };
   });
@@ -275,9 +298,25 @@ export async function updateOrderPaymentStatusRepo(
 
     if (paymentStatus === "denied") {
       await restockOrderItems(tx, id);
+      await releasePromoUse(tx, id, "denied");
     }
 
-    await tx.update(orders).set({ paymentStatus }).where(eq(orders.id, id));
+    await tx.update(orders).set({
+      paymentStatus,
+      // Denying a free order is the staff's review of it.
+      ...(paymentStatus === "denied" && existing.promoFreeReview === "open" ? { promoFreeReview: "resolved" as const } : {})
+    }).where(eq(orders.id, id));
+  });
+}
+
+/** Staff have looked at an order a promo code made free and let it go ahead (spec section 5.5). */
+export async function resolvePromoFreeReviewRepo(id: number): Promise<"resolved" | "not_found" | "not_open"> {
+  return db.transaction(async (tx) => {
+    const [existing] = await tx.select({ promoFreeReview: orders.promoFreeReview }).from(orders).where(eq(orders.id, id)).limit(1).for("update");
+    if (!existing) return "not_found";
+    if (existing.promoFreeReview !== "open") return "not_open";
+    await tx.update(orders).set({ promoFreeReview: "resolved" }).where(eq(orders.id, id));
+    return "resolved";
   });
 }
 
@@ -289,6 +328,7 @@ export async function cancelCustomerOrderRepo(id: number, customerId: number): P
     if (!existing) return "not_found";
     if (existing.paymentStatus !== "pending") return "not_cancellable";
     await restockOrderItems(tx, id);
+    await releasePromoUse(tx, id, "cancelled");
     await tx.update(orders).set({ paymentStatus: "denied" }).where(eq(orders.id, id));
     return "cancelled";
   });
@@ -331,6 +371,7 @@ async function expirePendingCodOrder(orderId: number, now: Date): Promise<void> 
       const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).for("update");
       if (!order || order.codExpiresAt === null || order.codExpiresAt > now || order.paymentStatus !== "pending") return;
       await restockOrderItems(tx, order.id);
+      await releasePromoUse(tx, order.id, "expired");
       await tx.update(orders).set({ paymentStatus: "denied" }).where(eq(orders.id, order.id));
     });
   } catch (error) {

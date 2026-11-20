@@ -62,7 +62,7 @@ test("createOrderFromCheckout deducts stock for normal product variants and keep
     .where(eq(productVariants.id, ids.firstVariantId))
     .limit(1);
   const [order] = await db
-    .select({ paymentStatus: orders.paymentStatus, orderCode: orders.orderCode })
+    .select({ paymentStatus: orders.paymentStatus, orderCode: orders.orderCode, phone: orders.phone })
     .from(orders)
     .where(eq(orders.id, result.id))
     .limit(1);
@@ -74,6 +74,8 @@ test("createOrderFromCheckout deducts stock for normal product variants and keep
 
   assert.equal(variant?.stockQty, 8);
   assert.equal(order?.paymentStatus, "pending");
+  // Saved in the one stored format (+965…), so phone lookups match however the customer typed it.
+  assert.equal(order?.phone, "+96555123456");
   assert.match(order?.orderCode ?? "", /^[A-Z]{4}-\d{3,}$/);
   assert.ok(createdOrderItem?.createdAt, "expected order items to persist createdAt");
 });

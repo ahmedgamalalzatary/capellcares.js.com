@@ -16,6 +16,11 @@ import {
   offers,
   productVariants,
   products,
+  promoCodeCustomers,
+  promoCodeEvents,
+  promoCodes,
+  promoCodeTargets,
+  promoRedemptions,
   relatedItems,
   reviewPromptStates,
   reviewSubmissionHistory,
@@ -33,6 +38,11 @@ export async function resetApiTestDatabase() {
   // Every delete below is destructive, and most run before clearTestSeed's own guard, so refuse up front unless the target is an explicitly disposable schema.
   assertDisposableTestDatabaseUrl(resolveDatabaseUrl());
 
+  await db.delete(promoRedemptions);
+  await db.delete(promoCodeEvents);
+  await db.delete(promoCodeCustomers);
+  await db.delete(promoCodeTargets);
+  await db.delete(promoCodes);
   await db.delete(reviewPromptStates);
   await db.delete(reviewSubmissionHistory);
   await db.delete(reviews);

@@ -65,6 +65,9 @@ test("syncPermissionCatalog creates the expected ERP permission catalog without 
     "products.stock_update",
     "products.toggle_status",
     "products.update",
+    "promos.create",
+    "promos.read",
+    "promos.update_status",
     "reviews.permanent_delete",
     "reviews.read",
     "reviews.restore",
@@ -157,4 +160,9 @@ test("normalizePermissionKeys adds review and trash dependencies for review rest
     "reviews.restore",
     "trash.read"
   ]);
+});
+
+test("promo permissions pull in what they need: creating reads codes and the catalog it targets", () => {
+  assert.deepEqual(normalizePermissionKeys(["promos.create"]), ["categories.read", "collections.read", "offers.read", "products.read", "promos.create", "promos.read"]);
+  assert.deepEqual(normalizePermissionKeys(["promos.update_status"]), ["promos.read", "promos.update_status"]);
 });

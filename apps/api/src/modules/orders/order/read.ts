@@ -7,6 +7,12 @@ import {
   toNumber
 } from "./shared.js";
 
+/** An order as its customer sees it: without the promo rules snapshot or the staff review of a free order. */
+function customerOrderFields(row: typeof orders.$inferSelect) {
+  const { promoSnapshot: _promoSnapshot, promoFreeReview: _promoFreeReview, ...customer } = row;
+  return customer;
+}
+
 /** A customer's own orders, newest first. The storefront renders a card per order with item thumbnails and a unit count, so line items come in one extra query rather than N per-order detail requests. (The ERP list is paged in `admin-list.ts`.) */
 export async function listCustomerOrdersRepo(customerId: number) {
   const rows = await db
@@ -16,7 +22,7 @@ export async function listCustomerOrdersRepo(customerId: number) {
     .orderBy(desc(orders.createdAt));
 
   const summaries = rows.map((row) => ({
-    ...row,
+    ...customerOrderFields(row),
     deliveryFee: toNumber(row.deliveryFee),
     totalAmount: toNumber(row.totalAmount)
   }));
@@ -40,7 +46,8 @@ export async function listCustomerOrdersRepo(customerId: number) {
     items: (itemsByOrder.get(row.id) ?? []).map((item) => ({
       ...item,
       unitPrice: toNumber(item.unitPrice),
-      lineTotal: toNumber(item.lineTotal)
+      lineTotal: toNumber(item.lineTotal),
+      promoDiscountAmount: item.promoDiscountAmount == null ? null : toNumber(item.promoDiscountAmount)
     }))
   }));
 }
@@ -65,14 +72,17 @@ export async function findOrderByIdRepo(id: number, filters?: { customerId?: num
     .from(orderItems)
     .where(eq(orderItems.orderId, order.id));
 
+  const { promoSnapshot: _promoSnapshot, ...visible } = order;
   return {
-    ...order,
+    // Customers see the code and its savings, never the staff review state.
+    ...(filters?.customerId != null ? customerOrderFields(order) : visible),
     deliveryFee: toNumber(order.deliveryFee),
     totalAmount: toNumber(order.totalAmount),
     items: items.map((item) => ({
       ...item,
       unitPrice: toNumber(item.unitPrice),
       lineTotal: toNumber(item.lineTotal),
+      promoDiscountAmount: item.promoDiscountAmount == null ? null : toNumber(item.promoDiscountAmount),
       snapshotBaseUnitPrice: item.snapshotBaseUnitPrice == null ? null : toNumber(item.snapshotBaseUnitPrice),
       snapshotDiscountValue: item.snapshotDiscountValue == null ? null : toNumber(item.snapshotDiscountValue),
       snapshotDiscountStartsAt: item.snapshotDiscountStartsAt?.toISOString() ?? null,

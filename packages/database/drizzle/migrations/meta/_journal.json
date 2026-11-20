@@ -554,6 +554,20 @@
       "when": 1795186911662,
       "tag": "0078_drop_shop_custom_blocks",
       "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "5",
+      "when": 1795196325387,
+      "tag": "0079_normalize_phones",
+      "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "5",
+      "when": 1795196450652,
+      "tag": "0080_promo_codes",
+      "breakpoints": true
     }
   ]
 }
