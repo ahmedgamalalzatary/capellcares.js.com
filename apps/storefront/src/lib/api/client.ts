@@ -5,6 +5,7 @@ import type {
   Advice,
   Category,
   CheckoutRequestDto,
+  CheckoutPriceResponseDto,
   CheckoutResponseDto,
   Collection,
   Offer,
@@ -194,8 +195,13 @@ export async function fetchCheckoutShipping(): Promise<CheckoutShippingAvailabil
   return { enabled: data.enabled, addresses: data.addresses.map((row: unknown) => shippingDestinationSchema.parse(row)) };
 }
 
+/** The cart priced by the server with an optional promo code: the storefront shows and submits exactly these numbers. */
+export async function fetchCheckoutPrice(input: { items: CheckoutRequestDto["items"]; promoCode?: string; phone?: string }, accessToken: string | null): Promise<CheckoutPriceResponseDto> {
+  return authedMutationJSON("/api/v1/checkout/price", accessToken, { method: "POST", body: input, retryOn401: false }) as Promise<CheckoutPriceResponseDto>;
+}
+
 export async function fetchCheckoutShippingQuote(input: {
-  items: CheckoutRequestDto["items"]; paymentMethod: "cod" | "paymob"; shippingAddress: ShippingAddress
+  items: CheckoutRequestDto["items"]; paymentMethod: "cod" | "paymob"; shippingAddress: ShippingAddress; promoCode?: string; phone?: string
 }, accessToken: string | null, requireAuthentication = false): Promise<CheckoutShippingQuote> {
   const token = accessToken || !requireAuthentication ? accessToken : await checkoutRequestToken(accessToken, true);
   const data = await authedMutationJSON("/api/v1/checkout/shipping/quote", token,
@@ -212,7 +218,8 @@ export type CheckoutStatus = {
   attemptsUsed: number;
   latestAttemptStatus: string | null;
   canRetry: boolean;
-  order: { id: number; orderCode: string } | null;
+  /** `promo`: the code the paid order used and what it took off, in piastres. */
+  order: { id: number; orderCode: string; promo?: { code: string; discountCents: number } | null } | null;
 };
 
 export async function fetchPaymobMethods(): Promise<PaymobMethodAvailability> {

@@ -3,3 +3,4 @@ export * from "./currency.js";
 export * from "./product-status.js";
 export * from "./payment-methods.js";
 export * from "./payment-filter.js";
+export * from "./phone.js";

@@ -34,6 +34,9 @@ export const shippingQuoteResponseSchema = z.object({
 });
 
 export const checkoutShippingQuoteSchema = shippingQuoteResponseSchema.extend({
+  /** What the carrier charges the store. Equals shippingAmountCents (what the customer pays) unless a code waives delivery;
+   * absent on quotes saved before free delivery existed. */
+  carrierShippingAmountCents: shippingMoneyCentsSchema.optional(),
   productsTotalCents: shippingMoneyCentsSchema,
   amountCents: shippingMoneyCentsSchema.max(2_147_483_647),
   codAmountCents: shippingMoneyCentsSchema.max(2_147_483_647),

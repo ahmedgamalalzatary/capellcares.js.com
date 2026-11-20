@@ -35,7 +35,7 @@ export class CheckoutShippingError extends Error {
 
 type QuoteRequest = Pick<CheckoutRequestDto, "items" | "paymentMethod" | "shippingAddress" | "customerId">
   & Partial<Pick<CheckoutRequestDto, "addressLine" | "buildingApartment">>;
-type PricedCheckout = { items: unknown[]; totalAmount: number };
+type PricedCheckout = { items: unknown[]; totalAmount: number; parcelValueCents?: number; promo?: { application: { codeId: number; freeShipping?: boolean } | null } | null };
 export type CheckoutShippingProvider = {
   codPricingPolicy: "collection_total";
   listDestinations(): Promise<ShippingDestination[]>;
@@ -45,7 +45,9 @@ export type CheckoutShippingProvider = {
 function fingerprint(payload: QuoteRequest, priced: PricedCheckout): string {
   return createHash("sha256").update(JSON.stringify([
     payload.customerId ?? null, payload.items, payload.paymentMethod,
-    shippingAddressSchema.parse(payload.shippingAddress), priced.items, Math.round(priced.totalAmount * 100)
+    shippingAddressSchema.parse(payload.shippingAddress), priced.items, Math.round(priced.totalAmount * 100),
+    // The code itself, not only its effect: two codes with the same prices are still different agreements (spec section 7, case 34).
+    priced.promo?.application?.codeId ?? null
   ])).digest("hex");
 }
 
@@ -58,17 +60,23 @@ export function createCheckoutShippingService(provider: CheckoutShippingProvider
     const address = addresses.find(row => row.cityId === selected.data.cityId && row.zoneId === selected.data.zoneId && row.districtId === selected.data.districtId);
     if (!address) throw new CheckoutShippingError("SHIPPING_UNSUPPORTED");
     const productsTotalCents = Math.round(priced.totalAmount * 100);
+    // A free-delivery code: the customer pays no delivery fee, the store pays the carrier (spec section 5.2).
+    const freeShipping = priced.promo?.application?.freeShipping === true;
     let codAmountCents = payload.paymentMethod === "cod" ? initialCod ?? productsTotalCents : 0;
     const visited = new Set<number>();
     for (let iteration = 0; iteration < 8; iteration++) {
       if (visited.has(codAmountCents)) throw new CheckoutShippingError("SHIPPING_UNAVAILABLE");
       visited.add(codAmountCents);
+      // The carrier sizes the parcel from this value: the cart before the code plus any gift, so neither a discount nor a
+      // 0-priced gift makes the parcel look smaller than it is (spec section 5.2).
       const rate = await provider.quote({ cityId: address.cityId, districtId: address.districtId,
-        productsTotalCents, paymentMethod: payload.paymentMethod === "cod" ? "cod" : "prepaid", codAmountCents }).catch(error => {
+        productsTotalCents: priced.parcelValueCents ?? productsTotalCents, paymentMethod: payload.paymentMethod === "cod" ? "cod" : "prepaid", codAmountCents }).catch(error => {
         throw new CheckoutShippingError(error instanceof ShippingUnsupportedDestinationError ? "SHIPPING_UNSUPPORTED" : "SHIPPING_UNAVAILABLE");
       });
-      const quote = checkoutShippingQuoteSchema.parse({ ...rate,
-        productsTotalCents, amountCents: productsTotalCents + rate.shippingAmountCents,
+      const customerFeeCents = freeShipping ? 0 : rate.shippingAmountCents;
+      const quote = checkoutShippingQuoteSchema.parse({ ...rate, shippingAmountCents: customerFeeCents,
+        carrierShippingAmountCents: rate.shippingAmountCents,
+        productsTotalCents, amountCents: productsTotalCents + customerFeeCents,
         codAmountCents, paymentMethod: payload.paymentMethod, address });
       // Enforce the carrier's collection ceiling on every iteration, including the final accepted one, before a quote can be agreed or checkout can proceed; the address lines are only known when the caller has the full checkout payload, so an absent line is validated later at checkout and dispatch rather than failing a quote that never saw the address.
       assertShippingRestrictionsAllowed({
@@ -101,6 +109,7 @@ export function createCheckoutShippingService(provider: CheckoutShippingProvider
       const agreed = checkoutShippingQuoteSchema.parse(JSON.parse(stored.snapshot));
       const current = await calculate(payload, priced, agreed.codAmountCents);
       if (current.shippingAmountCents !== agreed.shippingAmountCents || current.size !== agreed.size ||
+        (current.carrierShippingAmountCents ?? current.shippingAmountCents) !== (agreed.carrierShippingAmountCents ?? agreed.shippingAmountCents) ||
         current.rateIdentity !== agreed.rateIdentity || JSON.stringify(current.address) !== JSON.stringify(agreed.address)) {
         throw new CheckoutShippingError("SHIPPING_QUOTE_CHANGED");
       }

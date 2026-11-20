@@ -45,6 +45,7 @@ import { getAdminSalesController } from "../orders/orders.controller.js";
 import { adminStaffManagementRoutes } from "./staff-management/admin-staff-management.routes.js";
 import { adminReviewsRoutes } from "./reviews/admin-reviews.routes.js";
 import { adminBulkApplyDiscount } from "./discounts/admin-discounts.controller.js";
+import { adminPromoCodesRoutes } from "../promos/admin-promo-codes.routes.js";
 
 export const adminRoutes = Router();
 
@@ -94,3 +95,4 @@ adminRoutes.use("/orders", adminOrdersRoutes);
 adminRoutes.use("/shipping", shippingOverviewRoutes);
 adminRoutes.use("/shipping", shippingActionRoutes);
 adminRoutes.use("/reviews", adminReviewsRoutes);
+adminRoutes.use("/promo-codes", adminPromoCodesRoutes);

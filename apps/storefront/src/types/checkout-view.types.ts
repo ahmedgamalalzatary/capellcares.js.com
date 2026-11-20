@@ -1,4 +1,4 @@
-import type { Language, Offer, PaymentMethod, Product, ShippingDestination, CheckoutShippingQuote } from "@capella/shared";
+import type { CheckoutPriceResponseDto, Language, PromoAppliedDto, Offer, PaymentMethod, Product, ShippingDestination, CheckoutShippingQuote } from "@capella/shared";
 
 export interface CheckoutViewProps {
   lang: Language;
@@ -11,6 +11,10 @@ export interface CheckoutResolvedItem {
   meta: string;
   unit: number;
   qty: number;
+  /** Position of the line in the cart, matching the server's priced items. */
+  index: number;
+  /** What the customer pays for the line with a code applied, from the server; absent without a code. */
+  lineTotal?: number;
 }
 
 export interface CheckoutErrors {
@@ -51,10 +55,34 @@ export interface CheckoutFormProps extends CheckoutViewProps {
   placeOrder: () => Promise<void>;
 }
 
+export interface CheckoutPromoState {
+  savedCode: string;
+  saveCode: (code: string | null, acceptedSales?: string) => void;
+  signedIn: boolean;
+  loginHref: string;
+  result: CheckoutPriceResponseDto["promo"];
+  /** The code as applied to the totals: set only when it applies and the customer accepted what it does. */
+  applied: PromoAppliedDto | null;
+  /** The code replaces sales the customer has not confirmed yet; checkout waits for an answer. */
+  confirmation: PromoAppliedDto | null;
+  confirm: () => void;
+  decline: () => void;
+  preview: (code: string) => Promise<CheckoutPriceResponseDto | null>;
+  /** Products total after the code (equals the subtotal without one). */
+  productsTotal: number;
+  /** Why a saved code was just removed at checkout. */
+  notice: string | null;
+  /** Online payment is hidden because the total is under Paymob's EGP 10 minimum. */
+  onlineMinimum: boolean;
+}
+
 export interface CheckoutSummaryProps extends CheckoutViewProps {
   shippingAmountCents?: number | null;
+  /** What delivery would have cost: above shippingAmountCents when a code makes delivery free. */
+  carrierShippingAmountCents?: number | null;
   resolved: CheckoutResolvedItem[];
   subtotal: number;
+  promo?: CheckoutPromoState;
 }
 
 export interface UseCheckoutResult {
@@ -64,7 +92,10 @@ export interface UseCheckoutResult {
   errors: CheckoutErrors;
   placing: boolean;
   paymobMethods: Array<"card" | "wallet">;
+  promo: CheckoutPromoState;
   orderId: string | null;
+  /** The code the order was placed with, for the confirmation; null without one. */
+  placedPromo: PromoAppliedDto | null;
   resolved: CheckoutResolvedItem[];
   subtotal: number;
   setField: <K extends keyof CheckoutFormState>(key: K, value: CheckoutFormState[K]) => void;

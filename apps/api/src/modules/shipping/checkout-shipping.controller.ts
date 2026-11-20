@@ -4,7 +4,8 @@ import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.js"
 import { checkoutShippingServiceFromEnvironment } from "./checkout-shipping-runtime.js";
 import { CheckoutShippingError } from "./checkout-shipping.service.js";
 import { ShippingUnsupportedDestinationError } from "./bosta/bosta-quote.service.js";
-import { priceCheckout } from "../orders/orders.service.js";
+import { priceCheckout, requireAppliedPromo } from "../orders/orders.service.js";
+import { PromoRejectedError } from "../promos/promo-checkout.js";
 import { ZodError } from "zod";
 
 export function shippingErrorResponse(error: unknown, res: Response) {
@@ -31,6 +32,14 @@ export async function checkoutShippingQuoteController(req: AuthenticatedRequest,
     const request = { ...checkoutShippingQuoteRequestSchema.parse(req.body), customerId: req.user?.role === "customer" ? req.user.id : null };
     // Product prices, discounts and bundle contents come from the database.
     const priced = await priceCheckout(request);
+    // A code that no longer applies is answered with its reason, never quoted at the full price as if it were not there.
+    requireAppliedPromo(priced);
     res.status(201).json(await service.quoteCheckout(request, priced));
-  } catch (error) { shippingErrorResponse(error, res); }
+  } catch (error) {
+    if (error instanceof PromoRejectedError) {
+      res.status(409).json({ code: "PROMO_REJECTED", message: error.message, promo: error.rejection });
+      return;
+    }
+    shippingErrorResponse(error, res);
+  }
 }

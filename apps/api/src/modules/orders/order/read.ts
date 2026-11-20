@@ -13,7 +13,7 @@ function customerOrderFields(row: typeof orders.$inferSelect) {
   const { manualShippingState: _manual, shippingProcessingAtMs: _processing,
     shippingPickupAtMs: _pickup, shippingAddressBlockedAtMs: _blocked, cancellationStatus: _cancellation,
     cancellationRequestedAtMs: _requested, cancellationCompletedAtMs: _completed, stockRestoredAtMs: _restocked,
-    shippingSnapshot: _shippingSnapshot, ...customer } = row;
+    shippingSnapshot: _shippingSnapshot, promoSnapshot: _promoSnapshot, ...customer } = row;
   return customer;
 }
 
@@ -85,6 +85,7 @@ export async function findOrderByIdRepo(id: number, filters?: { customerId?: num
       unitPrice: toNumber(item.unitPrice),
       lineTotal: toNumber(item.lineTotal),
       snapshotBaseUnitPrice: item.snapshotBaseUnitPrice == null ? null : toNumber(item.snapshotBaseUnitPrice),
+      promoDiscountAmount: item.promoDiscountAmount == null ? null : toNumber(item.promoDiscountAmount),
       snapshotDiscountValue: item.snapshotDiscountValue == null ? null : toNumber(item.snapshotDiscountValue),
       snapshotDiscountStartsAt: item.snapshotDiscountStartsAt?.toISOString() ?? null,
       snapshotDiscountEndsAt: item.snapshotDiscountEndsAt?.toISOString() ?? null

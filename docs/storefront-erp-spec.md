@@ -292,6 +292,22 @@ Checkout flow:
 - Checkout supports product variant lines, offer lines, and collection lines.
 - Shipping fees are quoted before submit (`POST /api/v1/checkout/shipping/quote`) and snapshotted on the order as an immutable quote (charge, quote id, estimated shipment size). The server re-derives the quote on submit and rejects mismatches.
 - After submitting, the storefront polls `GET /api/v1/checkout/:checkoutId/status`; unpaid sessions can be retried (`POST /api/v1/checkout/:checkoutId/retry`) while stock remains reserved.
+- Every checkout request keeps to the cart's limits: at most 999 of a line and 200 lines.
+
+## Promo Codes
+
+Full rules, edge cases and data model: `docs/promo-codes-spec.md`. Summary:
+- Signed-in customers only; a guest's code is kept and applied after login. One code per order.
+- Benefits, combinable in one code: percentage off (optional cap), fixed amount off the eligible total once, free delivery (the store pays the carrier), and a free gift (variant, offer or collection, with quantity).
+- Eligibility: the whole store or chosen categories (sub-categories included), products, variants, offers and collections, with exclusions. A product inside an offer or collection is not eligible through it.
+- Rules: schedule (Cairo time in the ERP), status (active, paused, stopped), order amount range on the cart as shown, minimum eligible pieces, maximum discounted pieces (most expensive first), total and per-customer limits (per account or phone), first-order only (any earlier order by account or phone, across every first-order code), private list of customers.
+- The code is applied to the original price and replaces a sale on the pieces it discounts; the customer confirms the exact new line prices before the code counts, and again whenever they change.
+- The discount goes into each line's total (`unit_price` = original price, `line_total` = paid, `promo_discount_amount` = the code's share), so every existing total, Paymob, Bosta and COD check is unchanged. The gift is its own line at 0 (`is_promo_gift`) and never counts toward any rule.
+- The server prices the cart with the code (`POST /api/v1/checkout/price`); the storefront shows and submits that total. Price, delivery quote and checkout share one code-guessing limit per account and IP.
+- Free delivery: the quote keeps the carrier fee and charges the customer 0; the absorbed fee is saved on the order (`promo_shipping_waived_cents`). It applies only while carrier shipping is on.
+- Uses are counted under a row lock on the code: COD orders count at placement, online checkouts hold a use while the customer pays (the second checkout is told "in use"). A use goes back when the order is denied, expires, or completes cancellation, and when an online payment fails, expires or is fully refunded before the order exists. A late online payment is honored when its stock is still free.
+- A code that brings an order to 0 is accepted, but its delivery waits for staff review (`promo_free_review`).
+- Codes are never edited or deleted after creation; staff pause, resume, stop, or duplicate as new. Every status change is audited.
 
 ## Payments
 
@@ -596,6 +612,7 @@ Confirmed v1 ERP modules:
 - sales
 - reviews
 - discounts
+- promo codes (create, list, detail with report, pause/resume/stop, duplicate)
 - advices
 - announcements
 - shop media
@@ -609,10 +626,10 @@ Deferred modules:
 - supplier management
 - purchase orders
 - accounting
-- reporting beyond basic lists and sales summaries
+- reporting beyond basic lists, sales summaries and the promo code report
 
 ERP permissions:
-- Access is granted per permission key, grouped by module: `products.*`, `categories.*`, `offers.*`, `collections.*`, `orders.*`, `shipping.*`, `sales.read`, `discounts.manage`, `reviews.*`, `advices.*`, `shop_media.*`, `staff.*`, `trash.read`, `dashboard.read`.
+- Access is granted per permission key, grouped by module: `products.*`, `categories.*`, `offers.*`, `collections.*`, `orders.*`, `shipping.*`, `sales.read`, `discounts.manage`, `promos.read`, `promos.create`, `promos.update_status`, `reviews.*`, `advices.*`, `shop_media.*`, `staff.*`, `trash.read`, `dashboard.read`.
 - Create vs update is distinguished so a read-only or create-only staff account is possible.
 - Delete is split into `soft_delete`, `restore`, and `permanent_delete`.
 

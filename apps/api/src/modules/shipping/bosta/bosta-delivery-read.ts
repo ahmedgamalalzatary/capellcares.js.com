@@ -1,6 +1,8 @@
 /** Shared, validated normalizer for Bosta delivery business reads.
  * Bosta returns `type` either as a bare integer or as `{ code, value }`, and `dropOffAddress` either flat ids or nested `city`/`zone` plus a district *name*; correlation must not depend on which form a response used, but must never guess — an identifier is believed only when the provider sent it and a district NAME only resolves through a unique match in authoritative zoning data, so anything ambiguous/missing/self-contradictory stays unresolved and callers fail closed. */
 
+import { normalizeEgyptianPhone } from "@capella/shared";
+
 export type NormalizedDeliveryType = { code: number; label: string };
 
 /** Provider display text is never trusted as identity; only its code is. */
@@ -29,8 +31,7 @@ export function normalizeTrackingIdentifier(value: unknown): string {
 
 export function normalizePhone(value: unknown): string {
   if (typeof value !== "string") throw new Error("Bosta recipient phone is invalid");
-  const text = value.trim();
-  return text.startsWith("+20") ? text : text.startsWith("0020") ? `+20${text.slice(4)}` : `+20${text.replace(/^0/, "")}`;
+  return normalizeEgyptianPhone(value);
 }
 
 export type NormalizedReadAddress = {

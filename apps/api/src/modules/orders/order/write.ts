@@ -1,10 +1,11 @@
 import { db } from "@capella/database/src/db";
-import { checkoutReservations, collectionItems, offerItems, orderItems, orders, orderReviewFlags, paymentAttempts, productVariants } from "@capella/database/drizzle/schema";
+import { checkoutReservations, collectionItems, offerItems, orderItems, orders, orderReviewFlags, paymentAttempts, productVariants, shippingWorkItems } from "@capella/database/drizzle/schema";
 import { and, eq, gt, gte, isNotNull, isNull, lte, notExists, or, sql } from "drizzle-orm";
 import { allowedPaymentStatuses, generateOrderCode, generatePendingOrderCode } from "./shared.js";
 import { enqueueOrderDelivery, stopUnsentDelivery, flagShippingOrder } from "../../shipping/shipping-dispatch.repository.js";
 import { untouchedShippingExpiryApplies } from "../../shipping/shipping-state.repository.js";
-import { requestShippingCancellationInTransaction, ShippingCancellationError } from "../../shipping/shipping-cancellation.repository.js";
+import { requestShippingCancellationInTransaction, ShippingCancellationError, STAFF_DENY_CANCELLATION_REASON } from "../../shipping/shipping-cancellation.repository.js";
+import { lockAndRecheckPromo, recordPromoUse, releasePromoUse, type PromoApplication } from "../../promos/promo-checkout.js";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -58,6 +59,10 @@ interface OrderItem {
   snapshotDiscountValue?: number | null;
   snapshotDiscountStartsAt?: string | null;
   snapshotDiscountEndsAt?: string | null;
+  promoDiscountAmount?: number | null;
+  promoReplacedDiscountId?: number | null;
+  /** The code's free item (spec section 4.4): its own line at 0. */
+  isPromoGift?: boolean;
 }
 
 /** Atomically decrements variant stock only if enough is available. */
@@ -185,10 +190,14 @@ export async function createOrderWithItems(input: {
     shippingQuoteId?: string | null;
     shippingSize?: "small" | "medium" | "large" | null;
     shippingSnapshot?: string | null;
+    promoShippingWaivedCents?: number;
   };
   items: OrderItem[];
+  /** The promo code this order uses; re-checked and counted under the code's row lock in this same transaction. */
+  promo?: PromoApplication | null;
 }) {
   return db.transaction(async (tx) => {
+    if (input.promo) await lockAndRecheckPromo(tx, input.promo);
     for (const item of input.items) {
       if (item.itemType === "offer") {
         if (item.offerId == null) {
@@ -234,7 +243,13 @@ export async function createOrderWithItems(input: {
     const [order] = await tx.insert(orders).values({
       ...input.order,
       orderCode: generatePendingOrderCode(),
-      totalAmount: sql`${input.order.totalAmount}`
+      totalAmount: sql`${input.order.totalAmount}`,
+      ...(input.promo ? {
+        promoCodeId: input.promo.codeId,
+        promoCodeText: input.promo.codeText,
+        promoSnapshot: input.promo.snapshot,
+        promoDiscountCents: input.promo.discountCents
+      } : {})
     }).$returningId();
 
     const orderCode = generateOrderCode(order.id);
@@ -263,11 +278,26 @@ export async function createOrderWithItems(input: {
         snapshotDiscountType: item.snapshotDiscountType ?? null,
         snapshotDiscountValue: item.snapshotDiscountValue == null ? null : sql`${item.snapshotDiscountValue}`,
         snapshotDiscountStartsAt: item.snapshotDiscountStartsAt == null ? null : new Date(item.snapshotDiscountStartsAt),
-        snapshotDiscountEndsAt: item.snapshotDiscountEndsAt == null ? null : new Date(item.snapshotDiscountEndsAt)
+        snapshotDiscountEndsAt: item.snapshotDiscountEndsAt == null ? null : new Date(item.snapshotDiscountEndsAt),
+        promoDiscountAmount: item.promoDiscountAmount == null ? null : sql`${item.promoDiscountAmount}`,
+        promoReplacedDiscountId: item.promoReplacedDiscountId ?? null,
+        isPromoGift: item.isPromoGift === true
       }))
     );
 
+    if (input.promo) {
+      await recordPromoUse(tx, input.promo, order.id, input.order.promoShippingWaivedCents ?? 0);
+      // A code that brings the whole order to 0 is allowed, but staff look at it before it ships (spec section 5.5).
+      if (input.order.totalAmount === 0) {
+        await flagShippingOrder(tx, order.id, "promo_free_review", `Promo code ${input.promo.codeText} made this order free; review it before shipping`);
+      }
+    }
+
     await enqueueOrderDelivery(tx, order.id);
+    if (input.promo && input.order.totalAmount === 0) {
+      await tx.update(shippingWorkItems).set({ status: "failed", lastError: "PROMO_FREE_REVIEW" })
+        .where(and(eq(shippingWorkItems.orderId, order.id), eq(shippingWorkItems.operation, "create_delivery"), eq(shippingWorkItems.status, "pending")));
+    }
     return { id: order.id, orderCode };
   });
 }
@@ -309,7 +339,7 @@ export async function updateOrderPaymentStatusRepo(
 
     if (paymentStatus === "denied") {
       if (existing.shippingSnapshot) {
-        try { await requestShippingCancellationInTransaction(tx, existing, "staff", { requireUnsent: true }); }
+        try { await requestShippingCancellationInTransaction(tx, existing, "staff", { requireUnsent: true, reason: STAFF_DENY_CANCELLATION_REASON }); }
         catch (error) { if (error instanceof ShippingCancellationError) throw new ShippingCustodyRequiredError(); throw error; }
         return;
       }
@@ -327,6 +357,7 @@ export async function updateOrderPaymentStatusRepo(
       } else {
         await restockOrderItems(tx, id);
       }
+      await releasePromoUse(tx, id, "denied");
     }
 
     await tx.update(orders).set({ paymentStatus }).where(eq(orders.id, id));
@@ -399,6 +430,7 @@ async function expirePendingCodOrder(orderId: number, now: Date): Promise<void> 
         return;
       }
       await restockOrderItems(tx, order.id);
+      await releasePromoUse(tx, order.id, "expired");
       await tx.update(orders).set({ paymentStatus: "denied" }).where(and(
         eq(orders.id, order.id),
         eq(orders.paymentStatus, "pending")

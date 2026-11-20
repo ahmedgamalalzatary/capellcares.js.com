@@ -484,6 +484,27 @@
       "when": 1795180775467,
       "tag": "0068_shop_page_blocks",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "5",
+      "when": 1795180776467,
+      "tag": "0069_normalize_phones",
+      "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "5",
+      "when": 1795180777467,
+      "tag": "0070_promo_codes",
+      "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "5",
+      "when": 1795180778467,
+      "tag": "0071_promo_free_review_flag",
+      "breakpoints": true
     }
   ]
 }

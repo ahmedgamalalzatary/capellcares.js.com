@@ -85,6 +85,31 @@ describe("OrderDetailsPage", () => {
     await act(async () => { resolveRefresh({ ...detailedOrder, paymentMethod, shipping: { ...shipping, manualState: "preparing" } }); });
     expect(await screen.findByText("جارٍ التجهيز (الموظفة)")).toBeInTheDocument();
   });
+  it("shows the promo code and splits savings into sale and code discounts", async () => {
+    fetchOrder.mockResolvedValue({ ...detailedOrder, promoCodeText: "SAVE10", promoDiscountCents: 2000,
+      items: [{ ...detailedOrder.items[0], qty: 3, unitPrice: 100, lineTotal: 260, snapshotBaseUnitPrice: 100, promoDiscountAmount: 20 }] });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const totals = within(await screen.findByRole("region", { name: "ملخص المبالغ" }));
+    expect(totals.getByText("كود الخصم (SAVE10)")).toBeInTheDocument();
+    expect(totals.getByText("التوفير بتخفيضات المنتجات")).toBeInTheDocument();
+  });
+
+  it("marks the gift line and shows the gift's value in the savings", async () => {
+    fetchOrder.mockResolvedValue({ ...detailedOrder, promoCodeText: "GIFT", promoDiscountCents: 0,
+      items: [detailedOrder.items[0], { ...detailedOrder.items[0], id: 99, qty: 2, unitPrice: 0, lineTotal: 0, snapshotBaseUnitPrice: 40, isPromoGift: true }] });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    expect(await screen.findByText("هدية مجانية")).toBeInTheDocument();
+    const totals = within(screen.getByRole("region", { name: "ملخص المبالغ" }));
+    expect(totals.getByText("قيمة الهدية المجانية").nextElementSibling).toHaveTextContent("80");
+  });
+
+  it("shows the delivery fee the store paid for a free-delivery code", async () => {
+    fetchOrder.mockResolvedValue({ ...detailedOrder, promoCodeText: "SHIPFREE", promoDiscountCents: 0, promoShippingWaivedCents: 9729, shippingAmountCents: 0 });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const totals = within(await screen.findByRole("region", { name: "ملخص المبالغ" }));
+    expect(totals.getByText("توصيل مجاني بالكود (تحمّله المتجر)").nextElementSibling).toHaveTextContent("97.29");
+  });
+
   it("keeps reconcile available and edits locked when an older rejected job masks a pending edit", async () => {
     fetchOrder.mockResolvedValue({ ...detailedOrder, shipping: { manualState: null, carrierState: "created", rawProviderCode: 10,
       rawProviderType: "SEND", custodyState: "unknown", collection: { confirmed: false, amountCents: null },

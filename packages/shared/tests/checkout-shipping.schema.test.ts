@@ -31,3 +31,15 @@ test("carrier city names are allowed with shipping ids while legacy governorates
   assert.equal(schemas.checkoutSchema.safeParse({ ...checkout, governorate: "Carrier city name", shippingAddress, shippingQuoteId: "quote_1" }).success, true);
   assert.equal(schemas.checkoutSchema.safeParse({ ...checkout, governorate: "Carrier city name" }).success, false);
 });
+
+test("every checkout request keeps to the cart's limits: at most 999 of a line and 200 lines", () => {
+  const quote = { items: checkout.items, paymentMethod: "cod", shippingAddress };
+  const tooMany = [{ type: "product", variantId: 1, qty: 1000 }];
+  const tooLong = Array.from({ length: 201 }, (_, index) => ({ type: "product", variantId: index + 1, qty: 1 }));
+  for (const [schema, body] of [[schemas.checkoutSchema, checkout], [schemas.checkoutPriceRequestSchema, { items: checkout.items }],
+    [schemas.checkoutShippingQuoteRequestSchema, quote]] as const) {
+    assert.equal(schema.safeParse(body).success, true);
+    assert.equal(schema.safeParse({ ...body, items: tooMany }).success, false);
+    assert.equal(schema.safeParse({ ...body, items: tooLong }).success, false);
+  }
+});

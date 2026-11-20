@@ -58,6 +58,15 @@ export function checkoutShippingServiceFromEnvironment(env: Record<string, strin
   }
 }
 
+/** Delivery is charged at checkout (Bosta is on and configured), so a free-delivery code means something. */
+export function checkoutShippingEnabled(): boolean {
+  try {
+    return checkoutShippingServiceFromEnvironment() !== null;
+  } catch {
+    return false;
+  }
+}
+
 export async function resolveShippingForCheckout(payload: CheckoutRequestDto, priced: { items: unknown[]; totalAmount: number },
   service?: CheckoutShippingService): Promise<CheckoutShippingQuote | null> {
   const active = service ?? checkoutShippingServiceFromEnvironment();

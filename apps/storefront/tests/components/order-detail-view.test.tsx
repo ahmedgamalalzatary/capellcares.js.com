@@ -150,6 +150,12 @@ describe("OrderDetailView reviews", () => {
     expect(screen.queryByRole("button", { name: lang === "en" ? "Cancel order" : "إلغاء الطلب" })).not.toBeInTheDocument();
   });
 
+  it("shows the promo code the order used and what it saved", async () => {
+    const order = await fetchCustomerOrderById();
+    fetchCustomerOrderById.mockResolvedValue({ ...order, promoCodeText: "SAVE10", promoDiscountCents: 1500 });
+    render(createElement(OrderDetailView, { lang: "en", dict: getDict("en"), orderId: 12 }));
+    expect(await screen.findByText(/Promo code \(SAVE10\)/)).toHaveTextContent("15");
+  });
   it("keeps a saved login loading while its token is restored", async () => {
     accessToken = null;
     render(createElement(OrderDetailView, { lang: "en", dict: getDict("en"), orderId: 12 }));
@@ -244,6 +250,16 @@ describe("OrderDetailView reviews", () => {
 
     expect(await screen.findByText("Offer type")).toBeInTheDocument();
     expect(screen.getByText("Collection type")).toBeInTheDocument();
+  });
+
+  it("marks the code's free gift line", async () => {
+    const order = await fetchCustomerOrderById();
+    fetchCustomerOrderById.mockResolvedValue({
+      ...order,
+      items: [order.items[0], { ...order.items[0], id: 22, unitPrice: 0, lineTotal: 0, isPromoGift: true, snapshotNameEn: "Gift Lotion", review: null }]
+    });
+    render(createElement(OrderDetailView, { lang: "en", dict: { ...dict, promo: getDict("en").promo }, orderId: 12 }));
+    expect(await screen.findByText("Free gift")).toBeInTheDocument();
   });
 
   it("shows an error instead of an empty receipt when loading fails", async () => {

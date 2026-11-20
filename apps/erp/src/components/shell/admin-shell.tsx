@@ -6,7 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Dialog } from "radix-ui";
 import {
   ChartColumn, ChevronLeft, FolderTree, Gift, Images, Layers, LayoutDashboard, Lightbulb,
-  LogOut, Menu, Package, Percent, ShoppingBag, Star, Trash2, Truck, Users, X, type LucideIcon,
+  LogOut, Menu, Package, Percent, ShoppingBag, Star, TicketPercent, Trash2, Truck, Users, X, type LucideIcon,
 } from "lucide-react";
 import { useAdminAuth } from "@/components/providers/admin-auth";
 import { OrderReviewFlagAlerts } from "@/features/orders/components/order-review-flag-alerts";
@@ -39,6 +39,7 @@ const NAV: NavGroup[] = [
       { href: "/offers", label: "العروض", icon: Gift, permission: "offers.read" },
       { href: "/collections", label: "المجموعات", icon: Layers, permission: "collections.read" },
       { href: "/discounts", label: "الخصومات", icon: Percent, permission: "discounts.manage" },
+      { href: "/promo-codes", label: "أكواد الخصم", icon: TicketPercent, permission: "promos.read" },
     ],
   },
   {

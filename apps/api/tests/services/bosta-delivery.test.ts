@@ -226,3 +226,22 @@ test("prepaid delivery collects zero and bundle counts use sold component quanti
   assert.equal(request.payload.cod, 0);
   assert.equal(request.payload.specs.packageDetails.itemsCount, 3);
 });
+
+test("a free-delivery order sends Bosta the products total as the cash to collect, not the carrier fee the store pays", async () => {
+  const provider = await adapter();
+  const freeOrder = { ...order, totalAmount: "35.00", shippingAmountCents: 0,
+    shippingSnapshot: JSON.stringify({ quoteId: "quote_fixture", shippingAmountCents: 0, carrierShippingAmountCents: 9729, size: "small",
+      rateIdentity: deliveryRateIdentity(3500), quotedAt: "2026-09-26T00:00:00.000Z", productsTotalCents: 3500, amountCents: 3500,
+      codAmountCents: 3500, paymentMethod: "cod", address: destination }) };
+  const request = provider!.buildRequest(freeOrder as any, items as any, "bosta_create_7");
+  assert.equal(request.payload.cod, 35);
+});
+
+test("a free gift line ships in the parcel and its contents, without changing the cash to collect", async () => {
+  const provider = await adapter();
+  const withGift = [...items, { qty: 2, snapshotNameEn: "Gift Lotion", snapshotSizeLabel: "50ml", snapshotComponents: null, lineTotal: "0.00", isPromoGift: true }];
+  const request = provider!.buildRequest(order as any, withGift as any, "bosta_create_7");
+  assert.equal(request.payload.cod, 132.29);
+  assert.equal(request.payload.specs.packageDetails.itemsCount, 3);
+  assert.match(request.payload.specs.packageDetails.description, /Gift Lotion \(50ml\) x2/);
+});

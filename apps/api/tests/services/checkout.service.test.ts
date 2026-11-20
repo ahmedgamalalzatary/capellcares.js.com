@@ -65,7 +65,7 @@ test("createOrderFromCheckout deducts stock for normal product variants and keep
     .where(eq(productVariants.id, ids.firstVariantId))
     .limit(1);
   const [order] = await db
-    .select({ paymentStatus: orders.paymentStatus, orderCode: orders.orderCode })
+    .select({ paymentStatus: orders.paymentStatus, orderCode: orders.orderCode, phone: orders.phone })
     .from(orders)
     .where(eq(orders.id, result.id))
     .limit(1);
@@ -77,6 +77,8 @@ test("createOrderFromCheckout deducts stock for normal product variants and keep
 
   assert.equal(variant?.stockQty, 8);
   assert.equal(order?.paymentStatus, "pending");
+  // Saved in the one stored format (+20…), the same as Paymob orders, so phone lookups match across payment methods.
+  assert.equal(order?.phone, "+201012345678");
   assert.match(order?.orderCode ?? "", /^[A-Z]{4}-\d{3,}$/);
   assert.ok(createdOrderItem?.createdAt, "expected order items to persist createdAt");
 });

@@ -1,10 +1,11 @@
 import type { Response } from "express";
 import type { AuthenticatedRequest } from "../../middlewares/auth.middleware.js";
-import { PaymobUnavailableError, submitCheckout } from "./checkout.service.js";
+import { PaymobMinimumError, PaymobUnavailableError, submitCheckout } from "./checkout.service.js";
 import { PaymobProviderError } from "../payments/paymob/paymob-client.js";
 import { CheckoutAmountChangedError } from "../orders/orders.service.js";
 import { CheckoutShippingError } from "../shipping/checkout-shipping.service.js";
 import { PaymentEvidenceUnresolvedError } from "./paymob-checkout.service.js";
+import { PromoConfirmationRequiredError, PromoRejectedError } from "../promos/promo-checkout.js";
 
 export function checkoutController(req: AuthenticatedRequest, res: Response) {
   submitCheckout({
@@ -28,12 +29,24 @@ export function checkoutController(req: AuthenticatedRequest, res: Response) {
         res.status(error.status).json({ code: error.code, message: error.message });
         return;
       }
+      if (error instanceof PaymobMinimumError) {
+        res.status(400).json({ code: "PAYMENT_MINIMUM", message: error.message });
+        return;
+      }
       if (error instanceof PaymobUnavailableError) {
         res.status(503).json({ code: "PAYMENT_UNAVAILABLE", message: error.message });
         return;
       }
       if (error instanceof PaymobProviderError) {
         res.status(502).json({ code: "PAYMENT_UNAVAILABLE", message: "Payment provider is temporarily unavailable" });
+        return;
+      }
+      if (error instanceof PromoRejectedError) {
+        res.status(409).json({ code: "PROMO_REJECTED", message: error.message, promo: error.rejection });
+        return;
+      }
+      if (error instanceof PromoConfirmationRequiredError) {
+        res.status(409).json({ code: "PROMO_CONFIRMATION_REQUIRED", message: error.message, promo: error.promo });
         return;
       }
       if (error instanceof CheckoutAmountChangedError) {

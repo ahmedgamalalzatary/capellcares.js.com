@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@capella/database/src/db";
 import { adminUsers, adminUserPermissions, permissions, orders, shipments, shippingWorkItems } from "@capella/database/drizzle/schema";
-import { shipmentEditSchema, checkoutShippingQuoteSchema } from "@capella/shared";
+import { normalizeEgyptianPhone, shipmentEditSchema, checkoutShippingQuoteSchema } from "@capella/shared";
 import type { ShipmentEdit } from "@capella/shared";
 import { assertShippingEditAllowed, type ShippingEditEvidence } from "./shipping-state.repository.js";
 import { recordShippingObservation } from "./shipping-sync.repository.js";
@@ -25,7 +25,7 @@ export async function assertShippingActor(tx: ShippingTransaction, actorId: numb
   }
 }
 
-const phone = (value: string) => value.startsWith("+20") ? value : value.startsWith("0020") ? `+20${value.slice(4)}` : `+20${value.replace(/^0/, "")}`;
+const phone = normalizeEgyptianPhone;
 
 /** Shared strict comparison. A read without provable identity never confirms an edit. */
 const addressMatches = (actual: NormalizedReadAddress, requested: { zoneId: string | null; districtId: string | null; firstLine: string }) => {
@@ -121,7 +121,7 @@ export async function applyShippingNoMoneyEdit(orderId: number, input: unknown, 
       await tx.update(shippingWorkItems).set({ requestSnapshot: null }).where(and(eq(shippingWorkItems.orderId, orderId),
         eq(shippingWorkItems.operation, "create_delivery"), eq(shippingWorkItems.status, "failed"), eq(shippingWorkItems.lastError, "CREATE_REJECTED")));
       await tx.update(orders).set({ ...(patch.recipient?.fullName !== undefined ? { fullName: patch.recipient.fullName } : {}),
-        ...(patch.recipient?.phone !== undefined ? { phone: patch.recipient.phone } : {}),
+        ...(patch.recipient?.phone !== undefined ? { phone: phone(patch.recipient.phone) } : {}),
         ...(patch.address ? { addressLine: patch.address.addressLine, buildingApartment: patch.address.buildingApartment } : {}),
         ...(patch.notes !== undefined ? { notes: patch.notes } : {}), ...(patch.size ? { shippingSize: patch.size } : {}) }).where(eq(orders.id, orderId));
       return null;
