@@ -499,4 +499,9 @@ export class ErpStore {
     await api.post(`/api/erp/orders/${id}/payment-status`, { paymentStatus });
     await this.refetch();
   }
+
+  /** Staff have reviewed an order a promo code made free, and it can go out. */
+  async resolvePromoFreeReview(id: number) {
+    await api.post(`/api/erp/orders/${id}/promo-review`);
+  }
 }

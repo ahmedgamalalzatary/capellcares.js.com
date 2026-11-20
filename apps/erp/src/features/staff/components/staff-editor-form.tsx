@@ -17,6 +17,7 @@ const MODULE_LABELS: Record<string, string> = {
   dashboard: "لوحة التحكم",
   products: "المنتجات",
   discounts: "الخصومات",
+  promos: "أكواد الخصم",
   categories: "التصنيفات",
   offers: "العروض",
   collections: "المجموعات",
@@ -42,7 +43,8 @@ const ACTION_LABELS: Record<string, string> = {
   toggle_status: "تغيير الحالة",
   stock_update: "تحديث المخزون",
   update_payment_status: "تحديث حالة الدفع",
-  update_state: "تحديث حالة الشحن"
+  update_state: "تحديث حالة الشحن",
+  update_status: "إيقاف واستئناف"
 };
 
 function moduleLabel(moduleName: string) {

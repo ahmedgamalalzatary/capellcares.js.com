@@ -21,7 +21,10 @@ import {
   type DashboardRange,
 } from "@/features/dashboard/lib/metrics";
 import { usePaymentSummary } from "@/features/dashboard/hooks/use-payment-summary";
-import { canReadErpModule } from "@/lib/erp-permissions";
+import { canReadErpModule, hasErpPermission } from "@/lib/erp-permissions";
+import { PromoAttentionCard } from "@/features/dashboard/components/promo-attention";
+import type { PromoAttention } from "@/features/promos/lib/promo-report";
+import { api } from "@/lib/api/client";
 import { useStore } from "@/lib/store";
 
 const ranges: DashboardRange[] = ["today", "7d", "30d"];
@@ -41,6 +44,20 @@ export default function DashboardPage() {
   const canReadProducts = canReadErpModule(user, "products");
   const canReadOrders = canReadErpModule(user, "orders");
   const canReadSales = canReadErpModule(user, "sales");
+  const canReadPromos = hasErpPermission(user, "promos.read");
+  const [promoAttention, setPromoAttention] = useState<PromoAttention | null>(null);
+  useEffect(() => {
+    if (!canReadPromos) return;
+    let cancelled = false;
+    api.get<PromoAttention>("/api/erp/promo-codes/attention")
+      // Only well-formed lists are shown, so an unexpected answer can never break the dashboard.
+      .then((next) => { if (!cancelled) setPromoAttention({
+        freeOrderReviews: Array.isArray(next?.freeOrderReviews) ? next.freeOrderReviews : [],
+        endingSoon: Array.isArray(next?.endingSoon) ? next.endingSoon : []
+      }); })
+      .catch(() => { if (!cancelled) setPromoAttention({ freeOrderReviews: [], endingSoon: [] }); });
+    return () => { cancelled = true; };
+  }, [canReadPromos]);
   const clock = now ?? new Date(0);
   const period = rangeWindow(range, clock);
   const allTimePayments = usePaymentSummary(null, canReadOrders);
@@ -119,6 +136,8 @@ export default function DashboardPage() {
             <CatalogHealth health={catalogHealth(products)} loaded={ready} />
           </>
         ) : null}
+
+        {canReadPromos ? <PromoAttentionCard attention={promoAttention} loaded={promoAttention !== null} /> : null}
       </div>
     </AdminShell>
   );

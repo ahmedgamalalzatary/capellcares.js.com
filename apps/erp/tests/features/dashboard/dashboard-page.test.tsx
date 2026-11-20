@@ -202,4 +202,20 @@ describe("DashboardPage", () => {
     expect(screen.getByRole("menuitem", { name: "منتج جديد" })).toHaveAttribute("href", "/products/new");
     expect(screen.queryByRole("menuitem", { name: "عرض جديد" })).not.toBeInTheDocument();
   });
+
+  it("shows promo items to people who can read promo codes, and nothing about them to others", async () => {
+    apiGet.mockImplementation(async (url: string) => url === "/api/erp/promo-codes/attention"
+      ? { freeOrderReviews: [{ orderId: 51, orderCode: "FREE-051", codeText: "FREE100", createdAt: at(8, 10) }], endingSoon: [] }
+      : { accepted: 1, pending: 0, denied: 0 });
+    const view = render(createElement(DashboardPage));
+    const promos = within(await screen.findByRole("region", { name: "أكواد الخصم" }));
+    expect(await promos.findByRole("link", { name: /FREE-051/ })).toHaveAttribute("href", "/orders/51");
+    view.unmount();
+
+    apiGet.mockClear();
+    mockedUseAdminAuth.mockReturnValue({ user: staff("products.read"), hydrated: true });
+    render(createElement(DashboardPage));
+    expect(screen.queryByRole("region", { name: "أكواد الخصم" })).not.toBeInTheDocument();
+    expect(apiGet).not.toHaveBeenCalledWith("/api/erp/promo-codes/attention");
+  });
 });

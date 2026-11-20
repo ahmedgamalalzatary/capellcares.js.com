@@ -21,6 +21,7 @@ import { formatMoney } from "@/lib/format";
 import { orderPaymentBadge, paymentStatusLabel } from "@/lib/payment-status";
 import { getStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { orderSavings } from "@/features/orders/lib/order-savings";
 
 const itemTypeLabels = { product_variant: "منتج", offer: "عرض", collection: "مجموعة" } as const;
 
@@ -90,6 +91,8 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus }: {
   const savingRef = useRef(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -124,9 +127,22 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus }: {
     }
   }
 
+  async function resolveFreeReview() {
+    if (!order || !canUpdatePaymentStatus || reviewing) return;
+    setReviewing(true);
+    setReviewError(null);
+    try {
+      await getStore().resolvePromoFreeReview(orderId);
+      setOrder((previous) => previous ? { ...previous, promoFreeReview: "resolved" } : previous);
+    } catch {
+      setReviewError("تعذر حفظ المراجعة. أعيدي تحميل الطلب وحاولي مرة أخرى.");
+    } finally {
+      setReviewing(false);
+    }
+  }
+
   const paymentDisplay = order ? orderPaymentBadge(order) : null;
-  const savings = order?.items.reduce((sum, item) => sum + Math.max(0,
-    Math.round((item.snapshotBaseUnitPrice ?? item.unitPrice) * 1000) - Math.round(item.unitPrice * 1000)) * item.qty, 0) ?? 0;
+  const savings = orderSavings(order?.items ?? []);
 
   return (
     <AdminShell
@@ -149,6 +165,17 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus }: {
         </Card>
       ) : (
         <div className="grid gap-5">
+          {order.promoFreeReview === "open" ? (
+            <Alert tone="warning">
+              <div className="grid justify-items-start gap-2">
+                <p>{`كود الخصم ${order.promoCodeText ?? ""} جعل هذا الطلب مجانيًا. راجعيه قبل التوصيل.`}</p>
+                {canUpdatePaymentStatus ? (
+                  <Button variant="secondary" size="sm" disabled={reviewing} onClick={() => { void resolveFreeReview(); }}>تمت المراجعة، يمكن توصيله</Button>
+                ) : null}
+                {reviewError ? <p role="alert" className="text-sm text-danger">{reviewError}</p> : null}
+              </div>
+            </Alert>
+          ) : null}
           <Card>
             <CardBody className="flex flex-wrap items-center justify-between gap-4 pt-5 sm:pt-6">
               <div className="grid gap-1">
@@ -186,6 +213,7 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus }: {
                           <div className="flex min-w-0 flex-wrap items-center gap-2">
                             <Badge tone="nude" swatch={false}>{itemTypeLabels[item.itemType]}</Badge>
                             <span className="text-text-strong">{item.snapshotNameAr || item.snapshotNameEn || "عنصر غير مسمى"}</span>
+                            {item.isPromoGift ? <Badge tone="success" swatch={false}>هدية مجانية</Badge> : null}
                           </div>
                           {item.snapshotNameEn && item.snapshotNameAr ? <p dir="auto" className="mt-0.5 text-sm text-text-muted">{item.snapshotNameEn}</p> : null}
                           {item.snapshotSizeLabel || item.snapshotColorAr ? (
@@ -209,8 +237,17 @@ function OrderDetailsContent({ orderId, crumbLabel, canUpdatePaymentStatus }: {
                 </Table>
                 <div role="region" aria-label="ملخص المبالغ" className="border-t border-line px-5 py-4 sm:px-6">
                   <dl className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
-                    {savings > 0 ? <Detail label="التوفير على المنتجات"><span className="num">{formatMoney(savings / 1000)}</span></Detail> : null}
+                    {savings.saleFils > 0 ? <Detail label="التوفير بتخفيضات المنتجات"><span className="num">{formatMoney(savings.saleFils / 1000)}</span></Detail> : null}
+                    {order.promoCodeText ? (
+                      <Detail label={`كود الخصم (${order.promoCodeText})`}><span className="num">{formatMoney(savings.promoFils / 1000)}</span></Detail>
+                    ) : null}
+                    {savings.giftFils > 0 ? (
+                      <Detail label="قيمة الهدية المجانية"><span className="num">{formatMoney(savings.giftFils / 1000)}</span></Detail>
+                    ) : null}
                     <Detail label="رسوم التوصيل"><span className="num">{formatMoney(order.deliveryFee ?? 0)}</span></Detail>
+                    {(order.promoShippingWaivedFils ?? 0) > 0 ? (
+                      <Detail label="توصيل مجاني بالكود (تحمّله المتجر)"><span className="num">{formatMoney(order.promoShippingWaivedFils! / 1000)}</span></Detail>
+                    ) : null}
                     <Detail label="إجمالي الطلب"><strong className="num">{formatMoney(order.totalAmount)}</strong></Detail>
                   </dl>
                 </div>

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const fetchOrder = vi.fn();
 const updateOrderPaymentStatus = vi.fn();
 const performShippingAction = vi.fn();
+const resolvePromoFreeReview = vi.fn();
 const mockedUseAdminAuth = vi.fn(() => ({
   user: { name: "Admin User", email: "admin@capella.test", role: "admin", permissionKeys: ["orders.read", "orders.update_payment_status"] },
   hydrated: true,
@@ -30,7 +31,8 @@ vi.mock("@/lib/store", () => ({
   getStore: () => ({
     fetchOrder,
     updateOrderPaymentStatus,
-    performShippingAction
+    performShippingAction,
+    resolvePromoFreeReview
   })
 }));
 
@@ -94,6 +96,49 @@ describe("OrderDetailsPage", () => {
     expect(screen.getByText("حولي")).toBeInTheDocument();
     expect(screen.getByText("السالمية")).toBeInTheDocument();
     expect(screen.getByText("المنطقة")).toBeInTheDocument();
+  });
+
+  it("shows the promo code and splits savings into sale and code discounts", async () => {
+    fetchOrder.mockResolvedValue({ ...detailedOrder, promoCodeText: "SAVE10", promoDiscountFils: 20000,
+      items: [{ ...detailedOrder.items[0], qty: 3, unitPrice: 100, lineTotal: 260, snapshotBaseUnitPrice: 100, promoDiscountAmount: 20 }] });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const totals = within(await screen.findByRole("region", { name: "ملخص المبالغ" }));
+    expect(totals.getByText("كود الخصم (SAVE10)").nextElementSibling).toHaveTextContent("20 د.ك");
+    expect(totals.getByText("التوفير بتخفيضات المنتجات").nextElementSibling).toHaveTextContent("20 د.ك");
+  });
+
+  it("marks the gift line and shows the gift's value in the savings", async () => {
+    fetchOrder.mockResolvedValue({ ...detailedOrder, promoCodeText: "GIFT", promoDiscountFils: 0,
+      items: [detailedOrder.items[0], { ...detailedOrder.items[0], id: 99, qty: 2, unitPrice: 0, lineTotal: 0, snapshotBaseUnitPrice: 4, isPromoGift: true }] });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    expect(await screen.findByText("هدية مجانية")).toBeInTheDocument();
+    const totals = within(screen.getByRole("region", { name: "ملخص المبالغ" }));
+    expect(totals.getByText("قيمة الهدية المجانية").nextElementSibling).toHaveTextContent("8 د.ك");
+  });
+
+  it("shows the delivery fee the store paid for a free-delivery code", async () => {
+    fetchOrder.mockResolvedValue({ ...detailedOrder, promoCodeText: "SHIPFREE", promoDiscountFils: 0, promoShippingWaivedFils: 1250, deliveryFee: 0 });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    const totals = within(await screen.findByRole("region", { name: "ملخص المبالغ" }));
+    expect(totals.getByText("توصيل مجاني بالكود (تحمّله المتجر)").nextElementSibling).toHaveTextContent("1.25 د.ك");
+  });
+
+  it("asks staff to review an order a code made free, and closes the review when they confirm", async () => {
+    resolvePromoFreeReview.mockResolvedValue(undefined);
+    fetchOrder.mockResolvedValue({ ...detailedOrder, promoCodeText: "FREE100", totalAmount: 0, paymentStatus: "accepted", promoFreeReview: "open" });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    expect(await screen.findByText("كود الخصم FREE100 جعل هذا الطلب مجانيًا. راجعيه قبل التوصيل.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "تمت المراجعة، يمكن توصيله" }));
+    await waitFor(() => expect(resolvePromoFreeReview).toHaveBeenCalledWith(5));
+    await waitFor(() => expect(screen.queryByText(/جعل هذا الطلب مجانيًا/)).not.toBeInTheDocument());
+  });
+
+  it("shows the free-order review without the confirm button to staff who cannot change orders", async () => {
+    mockedUseAdminAuth.mockReturnValue({ user: { name: "Viewer", email: "viewer@capella.test", role: "staff", permissionKeys: ["orders.read"] }, hydrated: true, logout: vi.fn() });
+    fetchOrder.mockResolvedValue({ ...detailedOrder, promoCodeText: "FREE100", totalAmount: 0, paymentStatus: "accepted", promoFreeReview: "open" });
+    render(createElement(OrderDetailsView, { orderId: 5, crumbLabel: "5" }));
+    expect(await screen.findByText(/جعل هذا الطلب مجانيًا/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "تمت المراجعة، يمكن توصيله" })).not.toBeInTheDocument();
   });
 
   it("waits for read permission before fetching and survives access changes", async () => {
