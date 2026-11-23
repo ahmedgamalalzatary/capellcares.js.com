@@ -16,9 +16,11 @@ const orderItemSchema = z.object({
 export const customerOrderSummarySchema = z.object({
   id, orderCode: z.string().min(1), customerType: z.enum(["guest", "registered"]), customerId: id.nullable(),
   fullName: z.string(), phone: z.string(), email: z.string(), governorate: z.string(), cityArea: z.string(),
+  // The delivery area picked at checkout (null for older orders or a deleted area) and its fee, included in totalAmount.
+  areaId: id.nullable(),
   addressLine: z.string(), buildingApartment: z.string(), notes: z.string().nullable(),
   paymentMethod: z.literal("cod"), paymentStatus: z.enum(["pending", "accepted", "denied"]),
-  totalAmount: money, createdAt: z.string().datetime(),
+  deliveryFee: money, totalAmount: money, createdAt: z.string().datetime(),
   items: z.array(orderItemSchema).optional()
 }).passthrough();
 export const customerOrderSchema = customerOrderSummarySchema.extend({ items: z.array(orderItemSchema) });

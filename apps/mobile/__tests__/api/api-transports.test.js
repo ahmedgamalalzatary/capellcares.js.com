@@ -16,9 +16,9 @@ const status = { checkoutId: "checkout_abc", status: "payment_pending",
   canRetry: true, order: null };
 const order = { id: 1, orderCode: "ORD1", customerType: "registered", customerId: 7,
   fullName: "Customer", phone: "01012345678", email: "customer@example.com", governorate: "Cairo",
-  cityArea: "City", addressLine: "Street", buildingApartment: "1", notes: null,
+  cityArea: "City", areaId: 4, addressLine: "Street", buildingApartment: "1", notes: null,
   paymentMethod: "cod", paymentStatus: "pending", providerPaymentStatus: null,
-  refundedAmountCents: 0, totalAmount: 30, createdAt: "2026-10-05T10:00:00.000Z", items: [] };
+  refundedAmountCents: 0, deliveryFee: 1.5, totalAmount: 30, createdAt: "2026-10-05T10:00:00.000Z", items: [] };
 
 describe("mobile remaining transport boundaries", () => {
   let client;
