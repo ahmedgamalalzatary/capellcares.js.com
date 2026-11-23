@@ -3,7 +3,7 @@ import test, { beforeEach } from "node:test";
 
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
-import { adminUserPermissions, adminUsers, permissions } from "@capella/database/drizzle/schema";
+import { adminUserPermissions, adminUsers, authSessions, permissions } from "@capella/database/drizzle/schema";
 import { db, mysqlPool } from "@capella/database/src/db";
 import { app } from "../../src/app.js";
 import { resetApiTestDatabase, createTestAdminUser } from "../helpers/database.js";
@@ -431,6 +431,142 @@ test("permission dependencies are normalized when saving staff assignments", asy
       savedPermissions.map((row) => row.key).sort(),
       ["products.read", "products.restore", "trash.read"]
     );
+  });
+});
+
+test("admin can permanently delete a staff user, with their permissions and sessions", async () => {
+  await withTestServer(app, async (request) => {
+    const staffAuth = await getStaffAuthHeaders(request, { email: "delete-me@capella.test", isActive: true });
+    const adminAuth = await getAdminAuthHeaders(request);
+    const [staffUser] = await db.select({ id: adminUsers.id }).from(adminUsers).where(eq(adminUsers.email, "delete-me@capella.test"));
+    assert.ok(staffUser);
+    await replaceAdminUserPermissions(staffUser.id, ["orders.read"]);
+
+    const response = await request(`/api/erp/staff/${staffUser.id}`, { method: "DELETE", headers: adminAuth });
+    assert.equal(response.status, 204);
+
+    const remainingUsers = await db.select({ id: adminUsers.id }).from(adminUsers).where(eq(adminUsers.id, staffUser.id));
+    assert.deepEqual(remainingUsers, []);
+    const remainingPermissions = await db.select({ id: adminUserPermissions.id }).from(adminUserPermissions)
+      .where(eq(adminUserPermissions.adminUserId, staffUser.id));
+    assert.deepEqual(remainingPermissions, []);
+    const remainingSessions = await db.select({ id: authSessions.id }).from(authSessions).where(eq(authSessions.adminUserId, staffUser.id));
+    assert.deepEqual(remainingSessions, []);
+
+    const afterDelete = await request("/api/erp/orders", { headers: { authorization: staffAuth.authorization } });
+    assert.equal(afterDelete.status, 401);
+
+    const missing = await request(`/api/erp/staff/${staffUser.id}`, { method: "DELETE", headers: adminAuth });
+    assert.equal(missing.status, 404);
+  });
+});
+
+test("staff delete never removes the admin account", async () => {
+  await withTestServer(app, async (request) => {
+    const adminAuth = await getAdminAuthHeaders(request);
+    const [bootstrapAdmin] = await db.select({ id: adminUsers.id }).from(adminUsers)
+      .where(eq(adminUsers.email, process.env.ADMIN_EMAIL ?? ""));
+    assert.ok(bootstrapAdmin);
+
+    const response = await request(`/api/erp/staff/${bootstrapAdmin.id}`, { method: "DELETE", headers: adminAuth });
+    assert.equal(response.status, 404);
+    const stillThere = await db.select({ id: adminUsers.id }).from(adminUsers).where(eq(adminUsers.id, bootstrapAdmin.id));
+    assert.equal(stillThere.length, 1);
+
+    const invalid = await request("/api/erp/staff/abc", { method: "DELETE", headers: adminAuth });
+    assert.equal(invalid.status, 400);
+  });
+});
+
+test("staff users cannot delete staff accounts or read their passwords", async () => {
+  const otherStaffId = await createTestAdminUser({
+    name: "Other Staff",
+    email: "other-staff@capella.test",
+    passwordHash: await bcrypt.hash("StaffPass123", 10),
+    role: "staff",
+    isActive: true
+  });
+
+  await withTestServer(app, async (request) => {
+    const staffAuth = await getStaffAuthHeaders(request);
+    const deleteResponse = await request(`/api/erp/staff/${otherStaffId}`, {
+      method: "DELETE",
+      headers: { authorization: staffAuth.authorization }
+    });
+    assert.equal(deleteResponse.status, 403);
+
+    const passwordResponse = await request(`/api/erp/staff/${otherStaffId}/password`, {
+      headers: { authorization: staffAuth.authorization }
+    });
+    assert.equal(passwordResponse.status, 403);
+  });
+
+  const stillThere = await db.select({ id: adminUsers.id }).from(adminUsers).where(eq(adminUsers.id, otherStaffId));
+  assert.equal(stillThere.length, 1);
+});
+
+test("admin can see the password a staff user was created with, and it is not stored as plain text", async () => {
+  await withTestServer(app, async (request) => {
+    const adminAuth = await getAdminAuthHeaders(request);
+    const createResponse = await request("/api/erp/staff", {
+      method: "POST",
+      headers: { ...adminAuth, "content-type": "application/json" },
+      body: JSON.stringify({ name: "Seen Staff", email: "seen-staff@capella.test", password: "Seen-Pass 123", isActive: true, permissionKeys: [] })
+    });
+    assert.equal(createResponse.status, 201);
+    assert.equal("password" in createResponse.json.item, false);
+    const staffId = createResponse.json.item.id as number;
+
+    const passwordResponse = await request(`/api/erp/staff/${staffId}/password`, { headers: adminAuth });
+    assert.equal(passwordResponse.status, 200);
+    assert.deepEqual(passwordResponse.json, { password: "Seen-Pass 123" });
+
+    const [row] = await db.select({ passwordEncrypted: adminUsers.passwordEncrypted }).from(adminUsers).where(eq(adminUsers.id, staffId));
+    assert.ok(row?.passwordEncrypted);
+    assert.equal(row.passwordEncrypted.includes("Seen-Pass 123"), false);
+  });
+});
+
+test("the shown password follows a password change and stays when the password is left blank", async () => {
+  await withTestServer(app, async (request) => {
+    const adminAuth = await getAdminAuthHeaders(request);
+    const createResponse = await request("/api/erp/staff", {
+      method: "POST",
+      headers: { ...adminAuth, "content-type": "application/json" },
+      body: JSON.stringify({ name: "Changing Staff", email: "changing-staff@capella.test", password: "FirstPass123", isActive: true, permissionKeys: [] })
+    });
+    const staffId = createResponse.json.item.id as number;
+    const update = (password: string) => request(`/api/erp/staff/${staffId}`, {
+      method: "PUT",
+      headers: { ...adminAuth, "content-type": "application/json" },
+      body: JSON.stringify({ name: "Changing Staff", email: "changing-staff@capella.test", password, isActive: true, permissionKeys: [] })
+    });
+
+    assert.equal((await update("SecondPass456")).status, 200);
+    assert.deepEqual((await request(`/api/erp/staff/${staffId}/password`, { headers: adminAuth })).json, { password: "SecondPass456" });
+
+    assert.equal((await update("")).status, 200);
+    assert.deepEqual((await request(`/api/erp/staff/${staffId}/password`, { headers: adminAuth })).json, { password: "SecondPass456" });
+  });
+});
+
+test("a staff user whose password was set before passwords were kept shows no password", async () => {
+  const staffId = await createTestAdminUser({
+    name: "Old Staff",
+    email: "old-staff@capella.test",
+    passwordHash: await bcrypt.hash("StaffPass123", 10),
+    role: "staff",
+    isActive: true
+  });
+
+  await withTestServer(app, async (request) => {
+    const adminAuth = await getAdminAuthHeaders(request);
+    const response = await request(`/api/erp/staff/${staffId}/password`, { headers: adminAuth });
+    assert.equal(response.status, 200);
+    assert.deepEqual(response.json, { password: null });
+
+    const missing = await request("/api/erp/staff/999999/password", { headers: adminAuth });
+    assert.equal(missing.status, 404);
   });
 });
 

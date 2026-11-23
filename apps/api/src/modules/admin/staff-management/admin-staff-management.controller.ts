@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { db } from "@capella/database/src/db";
 import {
   createAdminUser,
+  deleteStaffUser,
   findAdminUserByEmail,
   findStaffUserById,
   listStaffUsers,
@@ -17,6 +18,7 @@ import {
   replaceAdminUserPermissions,
   syncPermissionCatalog
 } from "../../../services/erp-permissions.service.js";
+import { decryptStaffPassword, encryptStaffPassword } from "../../../services/staff-password-vault.js";
 
 type StaffMutationInput = {
   name: string;
@@ -138,6 +140,7 @@ export async function createAdminStaffController(req: ErpAuthenticatedRequest, r
           name: input.name,
           email: input.email,
           passwordHash,
+          passwordEncrypted: encryptStaffPassword(input.password ?? ""),
           role: "staff",
           isActive: input.isActive
         },
@@ -173,10 +176,9 @@ export async function updateAdminStaffController(req: ErpAuthenticatedRequest, r
   }
 
   const input = parseStaffMutationBody(req.body, { requirePassword: false });
-  const nextPasswordHash =
-    typeof input.password === "string" && input.password.trim().length > 0
-      ? await bcrypt.hash(input.password, 10)
-      : undefined;
+  const passwordChanged = typeof input.password === "string" && input.password.trim().length > 0;
+  const nextPasswordHash = passwordChanged ? await bcrypt.hash(input.password ?? "", 10) : undefined;
+  const nextPasswordEncrypted = passwordChanged ? encryptStaffPassword(input.password ?? "") : undefined;
 
   const item = await db.transaction(async (tx) => {
     await updateAdminUser(staffId, {
@@ -184,6 +186,7 @@ export async function updateAdminStaffController(req: ErpAuthenticatedRequest, r
       email: input.email,
       isActive: input.isActive,
       passwordHash: nextPasswordHash,
+      passwordEncrypted: nextPasswordEncrypted,
       role: "staff"
     }, tx);
     await replaceAdminUserPermissions(staffId, input.permissionKeys, tx);
@@ -197,6 +200,37 @@ export async function updateAdminStaffController(req: ErpAuthenticatedRequest, r
     return toStaffDto(updatedStaffUser, permissionKeys);
   });
   res.json({ item });
+}
+
+/** The staff user's current password for the admin's eye button; null when it was set before passwords were kept. */
+export async function getAdminStaffPasswordController(req: ErpAuthenticatedRequest, res: Response) {
+  const staffId = parseStaffId(req.params.id);
+  if (staffId == null) {
+    return res.status(400).json({ error: "Invalid id" });
+  }
+
+  const staffUser = await findStaffUserById(staffId);
+  if (!staffUser) {
+    return res.status(404).json({ message: "Not found" });
+  }
+
+  res.set("Cache-Control", "no-store");
+  res.json({ password: decryptStaffPassword(staffUser.passwordEncrypted) });
+}
+
+/** Hard delete: the account, its permissions and its sessions are gone; records it made keep no link to it. */
+export async function deleteAdminStaffController(req: ErpAuthenticatedRequest, res: Response) {
+  const staffId = parseStaffId(req.params.id);
+  if (staffId == null) {
+    return res.status(400).json({ error: "Invalid id" });
+  }
+
+  const deleted = await deleteStaffUser(staffId);
+  if (!deleted) {
+    return res.status(404).json({ message: "Not found" });
+  }
+
+  res.status(204).end();
 }
 
 function isDuplicateAdminEmailError(error: unknown) {

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { type StaffUser } from "@/features/staff/types";
+import { AdminConfirmModal } from "@/components/admin/admin-confirm-modal";
 import { ForbiddenPage } from "@/components/admin/permission-gate";
 import { AdminShell } from "@/components/shell/admin-shell";
 import { useAdminAuth } from "@/components/providers/admin-auth";
@@ -30,6 +31,24 @@ export default function StaffManagementPage() {
   const { user, hydrated } = useAdminAuth();
   const [staffUsers, setStaffUsers] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingDelete, setPendingDelete] = useState<StaffUser | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      // A failed delete already shows the API client's error toast; the dialog stays open to try again.
+      await api.del(`/api/erp/staff/${pendingDelete.id}`);
+      const deletedId = pendingDelete.id;
+      setStaffUsers((current) => current.filter((staffUser) => staffUser.id !== deletedId));
+      setPendingDelete(null);
+    } catch {
+      // Handled by the toast above.
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   async function loadStaffManagement() {
     setLoading(true);
@@ -70,8 +89,30 @@ export default function StaffManagementPage() {
         </Button>
       }
     >
-      <StaffTable loading={loading} staffUsers={list.pageOf(sortedRows)} sort={list.state.sort} onSort={list.toggleSort} />
+      <StaffTable
+        loading={loading}
+        staffUsers={list.pageOf(sortedRows)}
+        sort={list.state.sort}
+        onSort={list.toggleSort}
+        onDelete={setPendingDelete}
+      />
       <SmartPagination {...list.paginationProps(sortedRows.length, loading)} />
+
+      <AdminConfirmModal
+        open={pendingDelete != null}
+        title="حذف العضو نهائيًا"
+        onClose={() => { if (!deleting) setPendingDelete(null); }}
+        confirmLabel={deleting ? "جارٍ الحذف…" : "حذف نهائي"}
+        tone="danger"
+        disableCancel={deleting}
+        disableConfirm={deleting}
+        onConfirm={confirmDelete}
+      >
+        <p>
+          سيتم حذف حساب <strong className="text-text-strong">{pendingDelete?.name}</strong> وصلاحياته نهائيًا، ولن يتمكن من تسجيل الدخول.
+          لا يمكن التراجع عن هذا. للإيقاف المؤقت يمكنك إيقاف الحساب بدلًا من حذفه.
+        </p>
+      </AdminConfirmModal>
     </AdminShell>
   );
 }

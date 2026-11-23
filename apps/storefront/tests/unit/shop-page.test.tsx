@@ -393,12 +393,12 @@ describe("shop page", () => {
     expect(screen.getByText("Advice")).toBeInTheDocument();
   });
 
-  it("shows a category section as the category's newest products, its sub-categories included, with a link to the category", async () => {
+  it("shows a category section as the category's products in the shop's product order, its sub-categories included, with a link to the category", async () => {
     page.layout = ["offers", { category: 21 }];
     render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
 
     const section = screen.getByRole("region", { name: "Body" });
-    expect(within(section).getAllByText(/^(Argan Oil|Body Lotion)$/).map((card) => card.textContent)).toEqual(["Argan Oil", "Body Lotion"]);
+    expect(within(section).getAllByText(/^(Argan Oil|Body Lotion)$/).map((card) => card.textContent)).toEqual(["Body Lotion", "Argan Oil"]);
     expect(within(section).getByRole("link", { name: "All products" })).toHaveAttribute("href", "/en/category/body?categoryId=21");
     expect(headingsInOrder()).toEqual(["Offers", "Body"]);
   });

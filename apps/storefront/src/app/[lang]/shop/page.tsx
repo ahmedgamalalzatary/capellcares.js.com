@@ -106,6 +106,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
               </ShopRowSection>
             ) : null;
           case "category": {
+            // A category's products in the shop's product order, titled with its name.
             const category = categoryById.get(block.categoryId);
             const rowProducts = category ? pickCategoryRowProducts(category.id, liveCategories, activeProducts) : [];
             if (!category || rowProducts.length === 0) {

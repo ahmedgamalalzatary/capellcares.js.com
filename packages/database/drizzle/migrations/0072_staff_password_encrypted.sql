@@ -1,0 +1,1 @@
+ALTER TABLE `admin_users` ADD `password_encrypted` varchar(512);

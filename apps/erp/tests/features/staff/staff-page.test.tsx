@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockedUseAdminAuth = vi.fn();
@@ -95,5 +95,47 @@ describe("StaffManagementPage", () => {
     expect(screen.getByRole("link", { name: "تعديل" })).toHaveAttribute("href", "/staff/11/edit");
     expect(screen.queryByText("orders.update_payment_status")).not.toBeInTheDocument();
     expect(mockedFetch.mock.calls.filter(([input]) => !String(input).includes("/orders/review-flags"))).toHaveLength(1);
+  });
+
+  it("permanently deletes a staff member after the admin confirms", async () => {
+    mockedUseAdminAuth.mockReturnValue({
+      user: { name: "Admin User", email: "admin@capella.test", role: "admin" },
+      hydrated: true,
+      logout: vi.fn().mockResolvedValue(undefined)
+    });
+    mockedFetch.mockImplementation(async (input: unknown, init?: RequestInit) => {
+      const path = String(input);
+      if (path.includes("/orders/review-flags")) {
+        return { ok: true, status: 200, json: async () => ({ items: [] }) };
+      }
+      if (init?.method === "DELETE") {
+        return { ok: true, status: 204, json: async () => null };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          items: [
+            { id: 11, name: "Orders Staff", email: "orders-staff@capella.test", role: "staff", isActive: true, permissionKeys: [] },
+            { id: 12, name: "Sales Staff", email: "sales-staff@capella.test", role: "staff", isActive: true, permissionKeys: [] }
+          ]
+        })
+      };
+    });
+
+    render(createElement(StaffManagementPage));
+    await waitFor(() => expect(screen.getByText("orders-staff@capella.test")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "حذف Orders Staff" }));
+    const dialog = await screen.findByRole("dialog", { name: "حذف العضو نهائيًا" });
+    expect(within(dialog).getByText(/Orders Staff/)).toBeInTheDocument();
+    expect(mockedFetch.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === "DELETE")).toBe(false);
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "حذف نهائي" }));
+
+    await waitFor(() => expect(screen.queryByText("orders-staff@capella.test")).not.toBeInTheDocument());
+    expect(screen.getByText("sales-staff@capella.test")).toBeInTheDocument();
+    const deleteCall = mockedFetch.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === "DELETE");
+    expect(String(deleteCall?.[0])).toMatch(/\/api\/erp\/staff\/11$/);
   });
 });

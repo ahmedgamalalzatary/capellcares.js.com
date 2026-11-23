@@ -426,6 +426,8 @@ export const adminUsers = mysqlTable("admin_users", {
   name: varchar("name", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  /** Staff only: the password, AES-256-GCM encrypted, so the admin can look it up in the ERP. Null until the password is next set. */
+  passwordEncrypted: varchar("password_encrypted", { length: 512 }),
   role: mysqlEnum("role", ["admin", "staff"]).notNull().default("admin"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),

@@ -26,11 +26,13 @@ function collectBranchIds(categoryId: number, categories: Category[]): Set<numbe
   return ids;
 }
 
-/** A category section's products: live products from the category and everything beneath it, newest first, at most 12. */
+/**
+ * A category section's products: live products from the category and everything beneath it, at most 12.
+ * They keep the order `products` arrives in (the shop's product order set in the ERP), the same order the other shop sections use.
+ */
 export function pickCategoryRowProducts(categoryId: number, categories: Category[], products: Product[]): Product[] {
   const branchIds = collectBranchIds(categoryId, categories);
   return products
     .filter((product) => branchIds.has(product.categoryId) && product.status === "active" && !product.deletedAt)
-    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt) || b.id - a.id)
     .slice(0, CATEGORY_SECTION_PRODUCT_LIMIT);
 }
