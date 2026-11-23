@@ -89,7 +89,7 @@ export const en = {
     description: "Description",
     ingredients: "Ingredients",
     howToUse: "How to use",
-    warnings: "Warnings",
+    warnings: "Precautions",
     mediaDotLabel: "go to media {index}",
     relatedOffers: "Part of these offers",
     related: "You may also like",

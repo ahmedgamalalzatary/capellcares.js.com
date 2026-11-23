@@ -89,7 +89,7 @@ export const ar = {
     description: "الوصف",
     ingredients: "المكونات",
     howToUse: "طريقة الاستخدام",
-    warnings: "تحذيرات",
+    warnings: "احتياطات",
     mediaDotLabel: "انتقل إلى الوسائط {index}",
     relatedOffers: "ضمن هذه العروض",
     related: "قد يعجبك أيضًا",
