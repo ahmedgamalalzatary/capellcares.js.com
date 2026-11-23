@@ -29,7 +29,7 @@ const STEPS = [
   { id: "basics", label: "الأساسيات", title: "ما هو هذا المنتج؟", description: "الاسم والوصف باللغتين، ثم القسم والماركة والمورد والأنواع والأعمار والكلمات المفتاحية." },
   { id: "media", label: "الوسائط", title: "صور المنتج", description: "الصور والفيديو العامة، وصور كل لون، وصورة التمرير التي تظهر على بطاقة المنتج." },
   { id: "pricing", label: "المقاسات والأسعار", title: "المقاسات والألوان والأسعار", description: "لكل مقاس سعر بيع، ولكل مقاس ولون مخزون، وسعر الشراء للاستخدام الداخلي." },
-  { id: "details", label: "التفاصيل والنشر", title: "التفاصيل والنشر", description: "المكونات وطريقة الاستخدام والتحذيرات، ثم العناصر المرتبطة وحالة المنتج." },
+  { id: "details", label: "التفاصيل والنشر", title: "التفاصيل والنشر", description: "المكونات وطريقة الاستخدام والاحتياطات، ثم العناصر المرتبطة وحالة المنتج." },
 ] as const;
 
 type StepId = (typeof STEPS)[number]["id"];
@@ -459,7 +459,7 @@ export function ProductForm({ mode, initial, categories, attributes, relatedOpti
       <div className="grid gap-5">
         <BilingualEditorField label="المكونات" arValue={ingAr} onArChange={setIngAr} enValue={ingEn} onEnChange={setIngEn} multiline />
         <BilingualEditorField label="طريقة الاستخدام" arValue={useAr} onArChange={setUseAr} enValue={useEn} onEnChange={setUseEn} multiline />
-        <BilingualEditorField label="تحذيرات" arValue={warnAr} onArChange={setWarnAr} enValue={warnEn} onEnChange={setWarnEn} multiline />
+        <BilingualEditorField label="احتياطات" arValue={warnAr} onArChange={setWarnAr} enValue={warnEn} onEnChange={setWarnEn} multiline />
         <div className={cn(FIELD_GRID, "border-t border-line pt-5")}>
           <Field label="رمز المنتج (SKU)" htmlFor="product-sku" hint="اختياري — يُنشأ تلقائيًا إذا تُرك فارغًا.">
             <Input id="product-sku" dir="ltr" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="BODY-LOTION-ROSE-200ML" />
