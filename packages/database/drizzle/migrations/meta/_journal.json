@@ -568,6 +568,13 @@
       "when": 1795196450652,
       "tag": "0080_promo_codes",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "5",
+      "when": 1795424527901,
+      "tag": "0081_staff_password_encrypted",
+      "breakpoints": true
     }
   ]
 }

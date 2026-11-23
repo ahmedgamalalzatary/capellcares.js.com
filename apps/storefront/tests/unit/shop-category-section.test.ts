@@ -16,14 +16,14 @@ function product(id: number, categoryId: number, createdAt: string, extra: Parti
 const categories = [category(1, null), category(2, 1), category(3, 1), category(4, 2), category(5, null)];
 
 describe("pickCategoryRowProducts", () => {
-  it("takes a main category's products from every level beneath it, newest first", () => {
+  it("takes a main category's products from every level beneath it, in the shop's product order", () => {
     const products = [
       product(10, 1, "2026-01-01T00:00:00Z"),
       product(11, 4, "2026-03-01T00:00:00Z"),
       product(12, 3, "2026-02-01T00:00:00Z"),
       product(13, 5, "2026-04-01T00:00:00Z")
     ];
-    expect(pickCategoryRowProducts(1, categories, products).map((p) => p.id)).toEqual([11, 12, 10]);
+    expect(pickCategoryRowProducts(1, categories, products).map((p) => p.id)).toEqual([10, 11, 12]);
   });
 
   it("takes only a sub category's own branch", () => {
@@ -45,7 +45,7 @@ describe("pickCategoryRowProducts", () => {
     const picked = pickCategoryRowProducts(1, categories, products);
     expect(CATEGORY_SECTION_PRODUCT_LIMIT).toBe(12);
     expect(picked).toHaveLength(12);
-    expect(picked[0].id).toBe(20);
+    expect(picked.map((p) => p.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
   });
 
   it("returns nothing for a category that no longer exists", () => {

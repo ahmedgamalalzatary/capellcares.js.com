@@ -191,3 +191,51 @@ describe("StaffEditorForm saving", () => {
     await waitFor(() => expect(onSuccess).toHaveBeenCalled());
   });
 });
+
+describe("StaffEditorForm password eye", () => {
+  beforeEach(() => {
+    get.mockReset();
+    get.mockImplementation(async (path: string) => {
+      if (path === "/api/erp/staff/permissions") return { items: catalog };
+      if (path === "/api/erp/staff/11/password") return { password: "Kept-Pass 1" };
+      if (path === "/api/erp/staff/12/password") return { password: null };
+      throw new Error(`unexpected ${path}`);
+    });
+  });
+
+  it("shows and hides the password being typed", async () => {
+    await renderForm();
+    const input = screen.getByLabelText("كلمة المرور");
+    expect(input).toHaveAttribute("type", "password");
+
+    fireEvent.click(screen.getByRole("button", { name: "إظهار كلمة المرور" }));
+    expect(input).toHaveAttribute("type", "text");
+
+    fireEvent.click(screen.getByRole("button", { name: "إخفاء كلمة المرور" }));
+    expect(input).toHaveAttribute("type", "password");
+  });
+
+  it("does not offer the current password when creating a member", async () => {
+    await renderForm();
+    expect(screen.queryByRole("button", { name: "إظهار كلمة المرور الحالية" })).not.toBeInTheDocument();
+  });
+
+  it("fetches the member's current password only when the admin asks to see it", async () => {
+    await renderForm({ mode: "edit", staffId: 11 });
+    expect(get).not.toHaveBeenCalledWith("/api/erp/staff/11/password");
+    expect(screen.queryByText("Kept-Pass 1")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "إظهار كلمة المرور الحالية" }));
+    expect(await screen.findByText("Kept-Pass 1")).toBeInTheDocument();
+    expect(get).toHaveBeenCalledWith("/api/erp/staff/11/password");
+
+    fireEvent.click(screen.getByRole("button", { name: "إخفاء كلمة المرور الحالية" }));
+    expect(screen.queryByText("Kept-Pass 1")).not.toBeInTheDocument();
+  });
+
+  it("explains when no password is kept for the member", async () => {
+    await renderForm({ mode: "edit", staffId: 12 });
+    fireEvent.click(screen.getByRole("button", { name: "إظهار كلمة المرور الحالية" }));
+    expect(await screen.findByText("كلمة المرور غير محفوظة. عيّني كلمة مرور جديدة لتظهر هنا.")).toBeInTheDocument();
+  });
+});

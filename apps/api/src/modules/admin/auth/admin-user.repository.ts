@@ -1,11 +1,11 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { adminUsers } from "@capella/database/drizzle/schema";
 import { db } from "@capella/database/src/db";
 
 export type AdminUserRole = "admin" | "staff";
 
 export type AdminUserRecord = typeof adminUsers.$inferSelect;
-type AdminUserDbExecutor = Pick<typeof db, "select" | "insert" | "update">;
+type AdminUserDbExecutor = Pick<typeof db, "select" | "insert" | "update" | "delete">;
 
 export function findAdminUserByEmail(email: string, executor: AdminUserDbExecutor = db) {
   return executor
@@ -57,6 +57,7 @@ export async function createAdminUser(input: {
   name: string;
   email: string;
   passwordHash: string;
+  passwordEncrypted?: string | null;
   role?: AdminUserRole;
   isActive?: boolean;
 }, executor: AdminUserDbExecutor = db) {
@@ -68,6 +69,7 @@ export async function updateAdminUser(id: number, input: {
   name: string;
   email: string;
   passwordHash?: string;
+  passwordEncrypted?: string | null;
   role?: AdminUserRole;
   isActive?: boolean;
 }, executor: AdminUserDbExecutor = db) {
@@ -75,4 +77,12 @@ export async function updateAdminUser(id: number, input: {
     .update(adminUsers)
     .set(input)
     .where(eq(adminUsers.id, id));
+}
+
+/** Permanently removes a staff account; its permissions and sessions go with it (cascading keys). Never touches an admin. */
+export async function deleteStaffUser(id: number, executor: AdminUserDbExecutor = db) {
+  const [result] = await executor
+    .delete(adminUsers)
+    .where(and(eq(adminUsers.id, id), eq(adminUsers.role, "staff")));
+  return result.affectedRows > 0;
 }

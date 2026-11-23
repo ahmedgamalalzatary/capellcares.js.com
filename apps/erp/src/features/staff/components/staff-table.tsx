@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Pencil, Plus, Users } from "lucide-react";
+import { Pencil, Plus, Trash2, Users } from "lucide-react";
 import type { StaffUser } from "@/features/staff/types";
 import { TableEmptyRow, TableSkeletonRows } from "@/components/admin/list-table";
 import { StatusBadge } from "@/components/admin/status-badge";
@@ -24,13 +24,16 @@ export function StaffTable({
   loading,
   staffUsers,
   sort,
-  onSort
+  onSort,
+  onDelete
 }: {
   loading: boolean;
   /** Rows already sorted by the page. */
   staffUsers: StaffUser[];
   sort: SortState<StaffSortKey> | null;
   onSort: (key: StaffSortKey) => void;
+  /** Asks to delete the member; the page confirms first. */
+  onDelete: (staffUser: StaffUser) => void;
 }) {
   return (
     <Card className="overflow-hidden">
@@ -70,9 +73,19 @@ export function StaffTable({
                   : `${formatNumber(staffUser.permissionKeys.length)} صلاحية`}
               </TD>
               <TD data-cell="actions">
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-1">
                   <Button asChild variant="ghost" size="sm">
                     <Link href={`/staff/${staffUser.id}/edit`}><Pencil /> تعديل</Link>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-danger"
+                    aria-label={`حذف ${staffUser.name}`}
+                    onClick={() => onDelete(staffUser)}
+                  >
+                    <Trash2 />
                   </Button>
                 </div>
               </TD>

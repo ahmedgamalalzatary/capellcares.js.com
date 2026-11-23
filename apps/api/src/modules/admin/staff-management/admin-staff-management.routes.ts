@@ -4,7 +4,9 @@ import type { ErpAuthenticatedRequest } from "../../../middlewares/admin-auth.mi
 import { wrapAsync } from "../../../lib/async-route.js";
 import {
   createAdminStaffController,
+  deleteAdminStaffController,
   getAdminStaffController,
+  getAdminStaffPasswordController,
   listAdminStaffController,
   listStaffPermissionCatalogController,
   updateAdminStaffController
@@ -25,3 +27,5 @@ adminStaffManagementRoutes.get("/", wrapAsync(listAdminStaffController));
 adminStaffManagementRoutes.get("/:id", wrapAsync(getAdminStaffController));
 adminStaffManagementRoutes.post("/", wrapAsync(createAdminStaffController));
 adminStaffManagementRoutes.put("/:id", wrapAsync(updateAdminStaffController));
+adminStaffManagementRoutes.get("/:id/password", wrapAsync(getAdminStaffPasswordController));
+adminStaffManagementRoutes.delete("/:id", wrapAsync(deleteAdminStaffController));

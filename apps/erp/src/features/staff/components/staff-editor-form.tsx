@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { api } from "@/lib/api/client";
 import { getErrorMessage } from "@/lib/errors";
 import { Alert } from "@/components/ui/alert";
@@ -117,11 +118,38 @@ export function StaffEditorForm({
   const [form, setForm] = useState<StaffFormState>(initialValues);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showTypedPassword, setShowTypedPassword] = useState(false);
+  // undefined: not fetched yet; null: no password is kept for this member.
+  const [currentPassword, setCurrentPassword] = useState<string | null | undefined>(undefined);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [loadingCurrentPassword, setLoadingCurrentPassword] = useState(false);
 
   // Re-sync only when the target record/mode changes, not on every parent re-render (initialValues is a fresh object each render at the call sites).
   useEffect(() => {
     setForm(initialValues);
+    setCurrentPassword(undefined);
+    setShowCurrentPassword(false);
   }, [staffId, mode]);
+
+  /** The member's password is asked for only when the admin presses the eye, never on page load. */
+  async function toggleCurrentPassword() {
+    if (showCurrentPassword) {
+      setShowCurrentPassword(false);
+      return;
+    }
+    if (currentPassword === undefined) {
+      setLoadingCurrentPassword(true);
+      try {
+        const response = await api.get<{ password: string | null }>(`/api/erp/staff/${staffId}/password`);
+        setCurrentPassword(response.password);
+      } catch {
+        return;
+      } finally {
+        setLoadingCurrentPassword(false);
+      }
+    }
+    setShowCurrentPassword(true);
+  }
 
   useEffect(() => {
     let active = true;
@@ -205,6 +233,11 @@ export function StaffEditorForm({
       } else {
         await api.put(`/api/erp/staff/${staffId}`, payload);
       }
+      // A new password replaces the kept one, so the next look fetches it again.
+      if (payload.password.trim().length > 0) {
+        setCurrentPassword(undefined);
+        setShowCurrentPassword(false);
+      }
       if (onSuccess) await onSuccess();
       if (mode === "create") setForm(createEmptyStaffForm());
     } catch (saveError) {
@@ -224,15 +257,57 @@ export function StaffEditorForm({
           <Input id="staff-email" dir="ltr" type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} />
         </Field>
         <Field label={mode === "create" ? "كلمة المرور" : "كلمة المرور الجديدة"} htmlFor="staff-password">
-          <Input
-            id="staff-password"
-            type="password"
-            value={form.password}
-            onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-            placeholder={mode === "create" ? undefined : "اتركيه فارغًا للإبقاء عليها كما هي"}
-          />
+          <span className="relative flex min-w-0">
+            <Input
+              id="staff-password"
+              type={showTypedPassword ? "text" : "password"}
+              dir="ltr"
+              autoComplete="new-password"
+              className="pe-11"
+              value={form.password}
+              onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+              placeholder={mode === "create" ? undefined : "اتركيه فارغًا للإبقاء عليها كما هي"}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="absolute end-1 top-1/2 -translate-y-1/2"
+              aria-label={showTypedPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+              aria-pressed={showTypedPassword}
+              onClick={() => setShowTypedPassword((shown) => !shown)}
+            >
+              {showTypedPassword ? <EyeOff /> : <Eye />}
+            </Button>
+          </span>
         </Field>
       </div>
+
+      {mode === "edit" && staffId != null ? (
+        <div className="flex items-center gap-3 rounded-well bg-sunken p-4">
+          <div className="grid min-w-0 flex-1 gap-0.5">
+            <span className="text-base font-medium text-text-strong">كلمة المرور الحالية</span>
+            {showCurrentPassword && currentPassword != null ? (
+              <span dir="ltr" className="num select-all break-all text-start text-base text-text-strong">{currentPassword}</span>
+            ) : showCurrentPassword ? (
+              <span className="text-xs text-text-muted">كلمة المرور غير محفوظة. عيّني كلمة مرور جديدة لتظهر هنا.</span>
+            ) : (
+              <span aria-hidden className="text-base tracking-widest text-text-muted">••••••••</span>
+            )}
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={showCurrentPassword ? "إخفاء كلمة المرور الحالية" : "إظهار كلمة المرور الحالية"}
+            aria-pressed={showCurrentPassword}
+            disabled={loadingCurrentPassword}
+            onClick={() => void toggleCurrentPassword()}
+          >
+            {showCurrentPassword ? <EyeOff /> : <Eye />}
+          </Button>
+        </div>
+      ) : null}
 
       <div className="flex items-start gap-3 rounded-well bg-sunken p-4">
         <Switch

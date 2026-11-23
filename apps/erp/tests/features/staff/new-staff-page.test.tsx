@@ -102,7 +102,7 @@ describe("StaffNewPage", () => {
 
     fireEvent.change(screen.getByLabelText("الاسم"), { target: { value: "سارة" } });
     fireEvent.change(screen.getByLabelText("البريد الإلكتروني"), { target: { value: "sara@capella.test" } });
-    fireEvent.change(screen.getByLabelText(/كلمة المرور/), { target: { value: "secret123" } });
+    fireEvent.change(screen.getByLabelText("كلمة المرور"), { target: { value: "secret123" } });
     fireEvent.click(await screen.findByRole("checkbox", { name: "الطلبات / عرض" }));
     fireEvent.click(screen.getByRole("button", { name: "إنشاء العضو" }));
 
@@ -129,7 +129,7 @@ describe("StaffNewPage", () => {
 
     fireEvent.change(screen.getByLabelText("الاسم"), { target: { value: "سارة" } });
     fireEvent.change(screen.getByLabelText("البريد الإلكتروني"), { target: { value: "sara@capella.test" } });
-    fireEvent.change(screen.getByLabelText(/كلمة المرور/), { target: { value: "secret123" } });
+    fireEvent.change(screen.getByLabelText("كلمة المرور"), { target: { value: "secret123" } });
     // Submitting is disabled until the permission catalog has landed.
     await screen.findByRole("checkbox", { name: "الطلبات / عرض" });
     fireEvent.click(screen.getByRole("button", { name: "إنشاء العضو" }));
