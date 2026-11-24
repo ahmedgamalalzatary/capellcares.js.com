@@ -28,6 +28,7 @@ export async function loadShopPageData(lang: string): Promise<{
   genders: ProductAttribute[];
   advices: Advice[];
   products: Product[];
+  categoryProducts: Map<number, Product[]>;
   offers: Offer[];
   collections: Collection[];
   layout: ShopPageBlock[];
@@ -41,10 +42,21 @@ export async function loadShopPageData(lang: string): Promise<{
     safeList(() => fetchOffers({ lang })),
     loadShopLayout(lang)
   ]);
-  // Collections is not on the page unless the ERP added it, so it is only fetched then.
-  const collections = layout.some((block) => block.type === "collections") ? await safeList(() => fetchCollections({ lang })) : [];
+  const categoriesById = new Map(categories.filter((category) => !category.deletedAt).map((category) => [category.id, category]));
+  const rowCategories = layout.flatMap((block) => {
+    if (block.type !== "category") return [];
+    const category = categoriesById.get(block.categoryId);
+    return category && category.hasProducts !== false ? [category] : [];
+  });
+  const [collections, categoryProductEntries] = await Promise.all([
+    layout.some((block) => block.type === "collections") ? safeList(() => fetchCollections({ lang })) : [],
+    Promise.all(rowCategories.map(async (category) => {
+      const items = await safeList(() => fetchProducts({ lang, category: category.slug, categoryId: String(category.id) }));
+      return [category.id, items] as const;
+    }))
+  ]);
 
-  return { categories, brands, genders, advices, products, offers, collections, layout };
+  return { categories, brands, genders, advices, products, categoryProducts: new Map(categoryProductEntries), offers, collections, layout };
 }
 
 /** The all categories page: every category; the page itself keeps the main ones that have a picture. */

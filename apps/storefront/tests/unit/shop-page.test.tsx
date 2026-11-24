@@ -94,7 +94,7 @@ function product(id: number, name: string, categoryId: number, extra: Record<str
     isNew: false,
     isBestseller: false,
     createdAt: `2026-01-${String(id).padStart(2, "0")}T00:00:00Z`,
-    variants: [],
+    variants: [{ price: 20 }],
     ...extra
   };
 }
@@ -120,8 +120,28 @@ const DEFAULT_LAYOUT: Block[] = [
 ];
 const page = vi.hoisted(() => ({ layout: [] as unknown[] }));
 
-vi.mock("@/lib/storefront-static-data", () => ({
-  loadShopPageData: async () => ({
+vi.mock("@/lib/api/client", () => ({
+  fetchCategories: async () => shopData().categories,
+  fetchBrands: async () => shopData().brands,
+  fetchGenders: async () => shopData().genders,
+  fetchAdvices: async () => shopData().advices,
+  fetchOffers: async () => shopData().offers,
+  fetchCollections: async () => shopData().collections,
+  fetchShopLayout: async () => page.layout,
+  fetchProducts: async ({ category, categoryId }: { category?: string; categoryId?: string }) => {
+    const { products } = shopData();
+    if (category === "building" && categoryId === "1") {
+      return products.filter((item) => item.categoryId === 1 || item.categoryId === 2).reverse();
+    }
+    if (category === "dolls" && categoryId === "4") {
+      return products.filter((item) => item.categoryId === 4 && item.status === "active");
+    }
+    return category || categoryId ? [] : products;
+  }
+}));
+
+function shopData() {
+  return {
     categories: [
       { id: 1, parentId: null, slug: "building", name: { ar: "تركيب", en: "Building" }, imagePath: "/uploads/building.jpg", isLeaf: false, hasProducts: true },
       { id: 2, parentId: 1, slug: "bricks", name: { ar: "مكعبات", en: "Bricks" }, imagePath: "/uploads/bricks.jpg", isLeaf: true, hasProducts: true },
@@ -140,7 +160,9 @@ vi.mock("@/lib/storefront-static-data", () => ({
     products: [
       product(1, "Brick Tower", 2, { isBestseller: true }),
       product(2, "Big Doll", 4, { isNew: true }),
-      product(3, "Old Doll", 4, { status: "inactive", isNew: true })
+      product(3, "Old Doll", 4, { status: "inactive", isNew: true }),
+      product(4, "Starter Bricks", 1),
+      product(5, "Unpriced Set", 1, { variants: [] })
     ],
     offers: [
       { id: 1, slug: "summer", name: { ar: "صيف", en: "Summer deal" }, status: "active", deletedAt: null, categoryId: null },
@@ -149,10 +171,9 @@ vi.mock("@/lib/storefront-static-data", () => ({
     collections: [
       { id: 1, slug: "starter", name: { ar: "بداية", en: "Starter set" }, status: "active", visibility: "visible", deletedAt: null, categoryId: 4 },
       { id: 2, slug: "hidden", name: { ar: "مخفي", en: "Hidden set" }, status: "active", visibility: "hidden", deletedAt: null, categoryId: 4 }
-    ],
-    layout: page.layout
-  })
-}));
+    ]
+  };
+}
 
 import ShopPage from "@/app/[lang]/shop/page";
 import { GenderTiles } from "@/components/shop/shop-tiles";
@@ -217,11 +238,12 @@ describe("shop page", () => {
     expect(mediaImages[1]).toHaveAttribute("data-priority", "false");
   });
 
-  it("fills a category section with products from its category and everything beneath it", async () => {
+  it("shows category products and their descendants in the linked page's Featured order", async () => {
     await renderShop();
     const building = screen.getByRole("heading", { name: "Building" }).closest("section")!;
-    expect(within(building).getByText("Brick Tower")).toBeInTheDocument();
-    expect(within(building).queryByText("Big Doll")).toBeNull();
+    expect(within(building).getAllByRole("article").map((card) => card.textContent)).toEqual([
+      "Starter Bricks", "Brick Tower"
+    ]);
     const dolls = screen.getByRole("heading", { name: "Dolls" }).closest("section")!;
     expect(within(dolls).getByText("Big Doll")).toBeInTheDocument();
     expect(within(dolls).queryByText("Old Doll")).toBeNull();

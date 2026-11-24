@@ -65,6 +65,7 @@ describe("storefront static data", () => {
       genders: [],
       advices: [],
       products: [],
+      categoryProducts: new Map(),
       offers: [],
       collections: [],
       layout: undefined
