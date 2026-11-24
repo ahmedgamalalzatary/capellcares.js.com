@@ -25,7 +25,7 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
   const lang = await resolveStorefrontLang(params);
   const dict = getDict(lang);
 
-  const { products, offers, collections, categories, advices, layout } = await loadShopPageData(lang);
+  const { products, categoryProducts, offers, collections, categories, advices, layout } = await loadShopPageData(lang);
 
   const activeOffers = offers.filter((o) => o.status === "active" && !o.deletedAt);
   const activeCollections = collections.filter(
@@ -106,9 +106,8 @@ export default async function ShopPage({ params }: { params: Promise<{ lang: str
               </ShopRowSection>
             ) : null;
           case "category": {
-            // A category's products in the shop's product order, titled with its name.
             const category = categoryById.get(block.categoryId);
-            const rowProducts = category ? pickCategoryRowProducts(category.id, liveCategories, activeProducts) : [];
+            const rowProducts = pickCategoryRowProducts(categoryProducts.get(block.categoryId) ?? []);
             if (!category || rowProducts.length === 0) {
               return null;
             }

@@ -24,6 +24,7 @@ async function loadShopLayout(lang: string): Promise<ShopPageBlock[]> {
 
 export async function loadShopPageData(lang: string): Promise<{
   products: Product[];
+  categoryProducts: Map<number, Product[]>;
   offers: Offer[];
   collections: Collection[];
   categories: Category[];
@@ -39,7 +40,18 @@ export async function loadShopPageData(lang: string): Promise<{
     loadShopLayout(lang)
   ]);
 
-  return { products, offers, collections, categories, advices, layout };
+  const categoriesById = new Map(categories.filter((category) => !category.deletedAt).map((category) => [category.id, category]));
+  const rowCategories = layout.flatMap((block) => {
+    if (block.type !== "category") return [];
+    const category = categoriesById.get(block.categoryId);
+    return category && category.hasProducts !== false ? [category] : [];
+  });
+  const categoryProducts = new Map(await Promise.all(rowCategories.map(async (category) => {
+    const items = await safeList(() => fetchProducts({ lang, category: category.slug, categoryId: String(category.id) }));
+    return [category.id, items] as const;
+  })));
+
+  return { products, categoryProducts, offers, collections, categories, advices, layout };
 }
 
 export async function loadSitemapData(): Promise<{

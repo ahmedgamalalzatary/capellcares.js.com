@@ -32,7 +32,7 @@ describe("storefront static data", () => {
     fetchOffers.mockReset();
     fetchCollections.mockReset();
     fetchAdvices.mockReset();
-    fetchCategories.mockReset();
+    fetchCategories.mockReset().mockResolvedValue([]);
     fetchShopLayout.mockReset();
   });
 
@@ -41,14 +41,17 @@ describe("storefront static data", () => {
     fetchOffers.mockRejectedValue(new Error("offline"));
     fetchCollections.mockRejectedValue(new Error("offline"));
     fetchAdvices.mockRejectedValue(new Error("offline"));
+    fetchCategories.mockRejectedValue(new Error("offline"));
     fetchShopLayout.mockRejectedValue(new Error("offline"));
 
     const { loadShopPageData } = await import("@/lib/storefront-static-data");
 
     await expect(loadShopPageData("ar")).resolves.toEqual({
       products: [],
+      categoryProducts: new Map(),
       offers: [],
       collections: [],
+      categories: [],
       advices: [],
       // With no layout the page still shows its built-in sections in their usual order.
       layout: ["category_tiles", "offers", "collections", "bestsellers", "new"].map((type, index) => ({

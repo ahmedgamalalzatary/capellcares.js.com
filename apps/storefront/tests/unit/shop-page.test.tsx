@@ -76,8 +76,19 @@ vi.mock("@/lib/storefront-page-context", () => ({
   resolveStorefrontLang: async () => "en"
 }));
 
-vi.mock("@/lib/storefront-static-data", () => ({
-  loadShopPageData: async () => shopData()
+vi.mock("@/lib/api/client", () => ({
+  fetchAdvices: async () => shopData().advices,
+  fetchCategories: async () => shopData().categories,
+  fetchCollections: async () => shopData().collections,
+  fetchOffers: async () => shopData().offers,
+  fetchShopLayout: async () => shopData().layout,
+  fetchProducts: async ({ category, categoryId }: { category?: string; categoryId?: string }) => {
+    const { products } = shopData();
+    if (category === "body" && categoryId === "21") {
+      return products.filter((product) => product.categoryId === 21 || product.categoryId === 24).reverse();
+    }
+    return category || categoryId ? [] : products;
+  }
 }));
 
 function shopData() {
@@ -117,9 +128,11 @@ function shopData() {
       },
       // Body (21) and its sub-category Oils (24) hold these two; nothing is in Face (23).
       { id: 3, slug: "body-lotion", name: { ar: "لوشن", en: "Body Lotion" }, imagePath: "/uploads/lotion.jpg", price: 90, categoryId: 21,
-        variants: [], stock: 5, isNew: false, isBestseller: false, status: "active", createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "" },
+        variants: [{ price: 90 }], stock: 5, isNew: false, isBestseller: false, status: "active", createdAt: "2026-03-01T00:00:00.000Z", updatedAt: "" },
       { id: 4, slug: "argan-oil", name: { ar: "زيت", en: "Argan Oil" }, imagePath: "/uploads/oil.jpg", price: 70, categoryId: 24,
-        variants: [], stock: 5, isNew: false, isBestseller: false, status: "active", createdAt: "2026-03-01T00:00:00.000Z", updatedAt: "" }
+        variants: [{ price: 70 }], stock: 5, isNew: false, isBestseller: false, status: "active", createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "" },
+      { id: 5, slug: "body-sample", name: { ar: "عينة", en: "Body Sample" }, imagePath: "/uploads/sample.jpg", categoryId: 21,
+        variants: [], stock: 0, isNew: false, isBestseller: false, status: "active", createdAt: "2026-02-01T00:00:00.000Z", updatedAt: "" }
     ],
     offers: [
       {
@@ -393,12 +406,12 @@ describe("shop page", () => {
     expect(screen.getByText("Advice")).toBeInTheDocument();
   });
 
-  it("shows a category section as the category's products in the shop's product order, its sub-categories included, with a link to the category", async () => {
+  it("shows a category row in the linked category page's Featured order", async () => {
     page.layout = ["offers", { category: 21 }];
     render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
 
     const section = screen.getByRole("region", { name: "Body" });
-    expect(within(section).getAllByText(/^(Argan Oil|Body Lotion)$/).map((card) => card.textContent)).toEqual(["Body Lotion", "Argan Oil"]);
+    expect(within(section).getAllByText(/^(Argan Oil|Body Lotion)$/).map((card) => card.textContent)).toEqual(["Argan Oil", "Body Lotion"]);
     expect(within(section).getByRole("link", { name: "All products" })).toHaveAttribute("href", "/en/category/body?categoryId=21");
     expect(headingsInOrder()).toEqual(["Offers", "Body"]);
   });
@@ -409,6 +422,14 @@ describe("shop page", () => {
 
     expect(screen.queryByRole("region", { name: "Face" })).toBeNull();
     expect(headingsInOrder()).toEqual(["Offers"]);
+  });
+
+  it("excludes a product without a priced variant, like the category grid", async () => {
+    page.layout = [{ category: 21 }];
+    render(await ShopPage({ params: Promise.resolve({ lang: "en" }) }));
+
+    const section = screen.getByRole("region", { name: "Body" });
+    expect(within(section).queryByText("Body Sample")).toBeNull();
   });
 
   it("loads the first picture section's image first, wherever it sits", async () => {
